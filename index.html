@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Merger</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+
     <style>
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -446,6 +449,12 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/blade.min.js"></script>
+
 <script>
     const MAX_DISPLAY_LINES = 20000;
     const dropzone = document.getElementById('dropzone');
@@ -485,25 +494,18 @@
         const dt = e.dataTransfer;
         const droppedFiles = dt.files;
 
-        // Try to extract local paths from the text/uri-list or text/plain data
-        // When files are dropped, some browsers/OS put the full paths in text data
         const textData = dt.getData('text') || dt.getData('text/uri-list') || '';
         const pathLines = textData.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-        // Also check the textarea value which may have captured paths
         const textareaLines = pathCapture.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
         pathCapture.value = '';
 
-        // Combine all captured path sources
         const capturedPaths = pathLines.length >= droppedFiles.length ? pathLines : textareaLines;
 
         handleFilesWithPaths(droppedFiles, capturedPaths);
     });
 
-    // Also listen on the textarea for drop events to capture path text
     pathCapture.addEventListener('drop', e => {
-        // Let the event bubble up to the dropzone handler
-        // But first, grab the text data and store it in the textarea
         const textData = e.dataTransfer.getData('text') || e.dataTransfer.getData('text/uri-list') || '';
         if (textData) {
             pathCapture.value = textData;
@@ -515,22 +517,18 @@
             const f = fileList[i];
             let path = f.webkitRelativePath || f.name;
 
-            // Try to match a captured path to this file by name
             if (capturedPaths.length > 0) {
-                // First try: exact index mapping if counts match
                 if (capturedPaths.length === fileList.length) {
                     const candidate = cleanPath(capturedPaths[i]);
                     if (candidate && candidate.toLowerCase().endsWith(f.name.toLowerCase())) {
                         path = candidate;
                     }
                 } else {
-                    // Fallback: find a captured path that ends with this filename
                     const match = capturedPaths.find(p =>
                         cleanPath(p).toLowerCase().endsWith(f.name.toLowerCase())
                     );
                     if (match) {
                         path = cleanPath(match);
-                        // Remove used path to avoid duplicate matching
                         capturedPaths = capturedPaths.filter(p => p !== match);
                     }
                 }
@@ -548,24 +546,9 @@
 
     function cleanPath(rawPath) {
         if (!rawPath) return '';
-        // Remove file:// prefix if present
         let p = rawPath.replace(/^file:\/\/\/?/, '');
-        // Decode URI encoding
         try { p = decodeURIComponent(p); } catch(e) {}
         return p.trim();
-    }
-
-    function handleFiles(fileList) {
-        for (const f of fileList) {
-            const path = f.webkitRelativePath || f.name;
-            const existingIndex = files.findIndex(entry => entry.path === path);
-            if (existingIndex !== -1) {
-                files[existingIndex] = { file: f, path: path, content: null };
-            } else {
-                files.push({ file: f, path: path, content: null });
-            }
-        }
-        renderFileList();
     }
 
     function renderFileList() {
@@ -632,6 +615,22 @@
         });
     }
 
+    // ── Mapování extenzí pro syntax highlighting ──
+    function getLanguage(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        if (['js', 'jsx'].includes(ext)) return 'javascript';
+        if (['ts', 'tsx'].includes(ext)) return 'typescript';
+        if (['html', 'xml', 'latte', 'vue', 'svelte'].includes(ext)) return 'xml';
+        if (['blade'].includes(ext)) return 'blade';
+        if (['php'].includes(ext)) return 'php';
+        if (['json'].includes(ext)) return 'json';
+        if (['yaml', 'yml', 'neon'].includes(ext)) return 'yaml';
+        if (['css'].includes(ext)) return 'css';
+        if (['scss'].includes(ext)) return 'scss';
+        if (['less'].includes(ext)) return 'less';
+        return 'plaintext';
+    }
+
     // ── Merge ──
     mergeBtn.addEventListener('click', async () => {
         if (!files.length) return;
@@ -647,29 +646,59 @@
                 }
             }
 
-            // Build merged output
-            const parts = files.map(entry => {
-                return `${entry.path}:\n${entry.content}`;
-            });
-            fullMergedContent = parts.join('\n\n');
+            let plainLinesArray = [];
+            let htmlLinesArray = [];
 
-            // Display with line limit
-            const allLines = fullMergedContent.split('\n');
-            const totalLines = allLines.length;
+            for (let i = 0; i < files.length; i++) {
+                const entry = files[i];
+                const contentStr = entry.content;
+                const lang = getLanguage(entry.path);
+
+                // Plain-text logika (pro schránku a soubor)
+                plainLinesArray.push(`${entry.path}:`);
+                const plainContentLines = contentStr.split('\n');
+                plainLinesArray.push(...plainContentLines);
+
+                // HTML logika (pro viditelný výstup se syntax highlightingem)
+                const pathLineHtml = `<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`;
+                htmlLinesArray.push(pathLineHtml);
+
+                let highlightedContent = '';
+                if (lang !== 'plaintext' && window.hljs && hljs.getLanguage(lang)) {
+                    // ignoreIllegals ignoruje chyby při auto-detekci nebo nestandardní syntaxi (např. u Latte tagů v HTML)
+                    highlightedContent = hljs.highlight(contentStr, { language: lang, ignoreIllegals: true }).value;
+                } else {
+                    highlightedContent = escapeHtml(contentStr);
+                }
+
+                // Highlight.js nemodifikuje konce řádků, takže můžeme spolehlivě rozdělit HTML tokeny
+                const highlightedContentLines = highlightedContent.split('\n');
+                htmlLinesArray.push(...highlightedContentLines);
+
+                // Přidání prázdného řádku mezi soubory
+                if (i < files.length - 1) {
+                    plainLinesArray.push('');
+                    htmlLinesArray.push('');
+                }
+            }
+
+            fullMergedContent = plainLinesArray.join('\n');
+            const totalLines = plainLinesArray.length;
             const totalFiles = files.length;
             const totalSize = formatSize(new Blob([fullMergedContent]).size);
-            let displayLines;
+
+            let displayLinesHtml;
 
             if (totalLines > MAX_DISPLAY_LINES) {
-                displayLines = allLines.slice(0, MAX_DISPLAY_LINES);
+                displayLinesHtml = htmlLinesArray.slice(0, MAX_DISPLAY_LINES);
                 truncationWarning.classList.add('visible');
             } else {
-                displayLines = allLines;
+                displayLinesHtml = htmlLinesArray;
                 truncationWarning.classList.remove('visible');
             }
 
-            outputContent.textContent = displayLines.join('\n');
-            lineNumbers.textContent = displayLines.map((_, i) => i + 1).join('\n');
+            outputContent.innerHTML = displayLinesHtml.join('\n');
+            lineNumbers.textContent = displayLinesHtml.map((_, i) => i + 1).join('\n');
 
             outputMeta.textContent = `${totalFiles} souborů · ${totalLines.toLocaleString('cs')} řádků · ${totalSize}`;
             outputSection.style.display = 'block';
@@ -689,7 +718,6 @@
             await navigator.clipboard.writeText(fullMergedContent);
             toast('Zkopírováno do schránky ✓');
         } catch {
-            // Fallback
             const ta = document.createElement('textarea');
             ta.value = fullMergedContent;
             document.body.appendChild(ta);
@@ -716,7 +744,7 @@
     clearBtn.addEventListener('click', () => {
         files = [];
         fullMergedContent = '';
-        outputContent.textContent = '';
+        outputContent.innerHTML = '';
         lineNumbers.textContent = '';
         outputSection.style.display = 'none';
         truncationWarning.classList.remove('visible');
