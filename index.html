@@ -353,11 +353,11 @@
         /* ── Toast ── */
         .toast {
             position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(120%);
-            background: var(--accent);
-            color: var(--bg);
+            top: 1.5rem;
+            right: 1.5rem;
+            transform: translateX(120%);
+            background: #f59e0b;
+            color: #1a1a1a;
             font-family: 'Outfit', sans-serif;
             font-weight: 600;
             font-size: .875rem;
@@ -369,7 +369,7 @@
             z-index: 999;
         }
         .toast.show {
-            transform: translateX(-50%) translateY(0);
+            transform: translateX(0);
             opacity: 1;
         }
 
@@ -478,6 +478,7 @@
     let files = []; // { file, path, content }
     let fullMergedContent = '';
     let dragSrcIndex = null;
+    let renderGeneration = 0;
     const pathCapture = document.getElementById('pathCapture');
 
     // ── Drag & Drop Zone ──
@@ -540,6 +541,7 @@
             const existingIndex = files.findIndex(entry => entry.path === path);
             if (existingIndex !== -1) {
                 files[existingIndex] = { file: f, path: path, content: null };
+                toast('Aktualizován: ' + f.name);
             } else {
                 files.push({ file: f, path: path, content: null });
             }
@@ -557,6 +559,7 @@
     function renderFileList() {
         fileListEl.innerHTML = '';
         mainActions.style.display = files.length ? 'flex' : 'none';
+        const currentGen = ++renderGeneration;
 
         files.forEach((entry, i) => {
             const el = document.createElement('div');
@@ -569,8 +572,7 @@
             const extColor = getExtColor(extRaw);
             const size = formatSize(entry.file.size);
 
-            // Spočítat řádky — pokud ještě nemáme obsah, přečteme soubor na pozadí
-            const linesSpanId = 'lines-' + i;
+            const linesSpanId = 'lines-' + currentGen + '-' + i;
 
             el.innerHTML = `
       <span class="grip">⠿</span>
@@ -583,13 +585,13 @@
       <button class="remove-btn" title="Odebrat">✕</button>
     `;
 
-            // Asynchronně doplnit počet řádků
             (async () => {
                 if (entry.content === null) {
                     entry.content = await readFile(entry.file);
                 }
+                if (currentGen !== renderGeneration) return;
                 const lineCount = entry.content.split('\n').length;
-                const span = document.getElementById(linesSpanId);
+                const span = el.querySelector('#' + linesSpanId);
                 if (span) span.textContent = lineCount.toLocaleString('cs') + ' lines';
             })();
 
@@ -825,7 +827,7 @@
         toastEl.textContent = msg;
         toastEl.classList.add('show');
         clearTimeout(toastEl._timer);
-        toastEl._timer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+        toastEl._timer = setTimeout(() => toastEl.classList.remove('show'), 3500);
     }
 </script>
 
