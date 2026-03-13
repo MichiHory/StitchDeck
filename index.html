@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Merger</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+        :root {
+            --bg: #0e0f13;
+            --surface: #16171d;
+            --surface-2: #1e1f27;
+            --border: #2a2b35;
+            --border-hover: #3a3b48;
+            --text: #e2e4ed;
+            --text-dim: #7d7f8c;
+            --accent: #6ee7a0;
+            --accent-dim: #6ee7a020;
+            --accent-glow: #6ee7a040;
+            --danger: #f87171;
+            --danger-dim: #f8717120;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        html { font-size: 15px; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            display: inline-flex;
+            align-items: center;
+            gap: .6rem;
+        }
+        .header h1 .icon {
+            width: 28px; height: 28px;
+            background: var(--accent);
+            border-radius: 7px;
+            display: grid; place-items: center;
+            color: var(--bg);
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .header p {
+            color: var(--text-dim);
+            margin-top: .4rem;
+            font-size: .9rem;
+        }
+
+        /* ── Drop Zone ── */
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all .25s ease;
+            position: relative;
+            background: var(--surface);
+        }
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+            box-shadow: 0 0 40px var(--accent-glow);
+        }
+        .dropzone.dragover .dropzone-icon {
+            transform: scale(1.15);
+        }
+        .dropzone-icon {
+            font-size: 2.5rem;
+            margin-bottom: .75rem;
+            transition: transform .2s ease;
+            display: block;
+        }
+        .dropzone-title {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: .25rem;
+        }
+        .dropzone-sub {
+            color: var(--text-dim);
+            font-size: .85rem;
+        }
+        .dropzone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* ── File List ── */
+        .file-list {
+            margin-top: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: .4rem;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            padding: .65rem 1rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: .85rem;
+            cursor: grab;
+            transition: background .15s, border-color .15s;
+            user-select: none;
+        }
+        .file-item:hover {
+            border-color: var(--border-hover);
+        }
+        .file-item.dragging {
+            opacity: .4;
+        }
+        .file-item.drag-over-item {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+        .file-item .grip {
+            color: var(--text-dim);
+            font-size: .7rem;
+            letter-spacing: 2px;
+            flex-shrink: 0;
+        }
+        .file-item .file-icon {
+            flex-shrink: 0;
+            width: 26px; height: 26px;
+            background: var(--accent-dim);
+            border-radius: 6px;
+            display: grid; place-items: center;
+            font-size: .7rem;
+            color: var(--accent);
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .file-item .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .file-item .file-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .file-item .file-path {
+            color: var(--text-dim);
+            font-size: .75rem;
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .file-item .file-size {
+            color: var(--text-dim);
+            font-size: .75rem;
+            flex-shrink: 0;
+        }
+        .file-item .remove-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all .15s;
+            font-size: .9rem;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .file-item .remove-btn:hover {
+            color: var(--danger);
+            background: var(--danger-dim);
+        }
+
+        /* ── Actions ── */
+        .actions {
+            display: flex;
+            gap: .75rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            font-family: 'Outfit', sans-serif;
+            font-size: .875rem;
+            font-weight: 600;
+            padding: .65rem 1.4rem;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            transition: all .2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 24px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+            opacity: .35;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-secondary {
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover {
+            border-color: var(--border-hover);
+            background: var(--border);
+        }
+        .btn-secondary:disabled {
+            opacity: .35;
+            cursor: not-allowed;
+        }
+        .btn-danger {
+            background: var(--danger-dim);
+            color: var(--danger);
+            border: 1px solid transparent;
+        }
+        .btn-danger:hover {
+            border-color: var(--danger);
+        }
+
+        .actions-right {
+            margin-left: auto;
+            display: flex;
+            gap: .5rem;
+        }
+
+        /* ── Output ── */
+        .output-section {
+            margin-top: 2rem;
+        }
+        .output-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: .75rem;
+        }
+        .output-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .output-meta {
+            color: var(--text-dim);
+            font-size: .8rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .output-actions {
+            display: flex;
+            gap: .5rem;
+        }
+        .output-box {
+            width: 100%;
+            min-height: 300px;
+            max-height: 70vh;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .8rem;
+            line-height: 1.65;
+            resize: vertical;
+            white-space: pre;
+            overflow: auto;
+            tab-size: 4;
+            -moz-tab-size: 4;
+        }
+        .output-box:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(120%);
+            background: var(--accent);
+            color: var(--bg);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: .875rem;
+            padding: .6rem 1.5rem;
+            border-radius: 100px;
+            pointer-events: none;
+            opacity: 0;
+            transition: all .35s cubic-bezier(.175,.885,.32,1.275);
+            z-index: 999;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* ── Truncation Warning ── */
+        .truncation-warning {
+            background: #f59e0b18;
+            border: 1px solid #f59e0b44;
+            border-radius: var(--radius-sm);
+            padding: .6rem 1rem;
+            margin-bottom: .75rem;
+            color: #fbbf24;
+            font-size: .82rem;
+            display: none;
+            align-items: center;
+            gap: .5rem;
+        }
+        .truncation-warning.visible {
+            display: flex;
+        }
+
+        /* ── Empty State ── */
+        .empty-state {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 2rem;
+            font-size: .9rem;
+        }
+
+        @media (max-width: 600px) {
+            .app { padding: 1.5rem 1rem 3rem; }
+            .actions { flex-direction: column; }
+            .actions-right { margin-left: 0; }
+            .output-actions { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <header class="header">
+        <h1><span class="icon">⊕</span> File Merger</h1>
+        <p>Přetáhněte soubory, sloučte a zkopírujte nebo stáhněte výsledek</p>
+    </header>
+
+    <!-- Drop Zone -->
+    <div class="dropzone" id="dropzone">
+        <span class="dropzone-icon">📂</span>
+        <div class="dropzone-title">Přetáhněte soubory sem</div>
+        <div class="dropzone-sub">nebo klikněte pro výběr souborů</div>
+        <input type="file" id="fileInput" multiple>
+    </div>
+
+    <!-- File List -->
+    <div class="file-list" id="fileList"></div>
+
+    <!-- Actions -->
+    <div class="actions" id="mainActions" style="display:none">
+        <button class="btn btn-primary" id="mergeBtn">⊕ Sloučit soubory</button>
+        <div class="actions-right">
+            <button class="btn btn-danger" id="clearBtn">Vymazat vše</button>
+        </div>
+    </div>
+
+    <!-- Output -->
+    <div class="output-section" id="outputSection" style="display:none">
+        <div class="output-header">
+            <h2>Sloučený výstup</h2>
+            <span class="output-meta" id="outputMeta"></span>
+        </div>
+        <div class="truncation-warning" id="truncationWarning">
+            ⚠️ <span>Zobrazení je omezeno na 20 000 řádků. Stáhněte soubor pro kompletní obsah.</span>
+        </div>
+        <div class="output-actions">
+            <button class="btn btn-secondary" id="copyBtn">📋 Kopírovat</button>
+            <button class="btn btn-secondary" id="downloadBtn">⬇ Stáhnout</button>
+        </div>
+        <textarea class="output-box" id="outputBox" readonly spellcheck="false"></textarea>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const MAX_DISPLAY_LINES = 20000;
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileListEl = document.getElementById('fileList');
+    const mainActions = document.getElementById('mainActions');
+    const mergeBtn = document.getElementById('mergeBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const outputSection = document.getElementById('outputSection');
+    const outputBox = document.getElementById('outputBox');
+    const outputMeta = document.getElementById('outputMeta');
+    const copyBtn = document.getElementById('copyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const truncationWarning = document.getElementById('truncationWarning');
+    const toastEl = document.getElementById('toast');
+
+    let files = []; // { file, path, content }
+    let fullMergedContent = '';
+    let dragSrcIndex = null;
+
+    // ── Drag & Drop Zone ──
+    dropzone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', e => {
+        if (!dropzone.contains(e.relatedTarget)) {
+            dropzone.classList.remove('dragover');
+        }
+    });
+    dropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', e => {
+        handleFiles(e.target.files);
+        fileInput.value = '';
+    });
+
+    function handleFiles(fileList) {
+        for (const f of fileList) {
+            // Try to get the relative path (webkitRelativePath) or fall back to name
+            const path = f.webkitRelativePath || f.name;
+            files.push({ file: f, path: path, content: null });
+        }
+        renderFileList();
+    }
+
+    function renderFileList() {
+        fileListEl.innerHTML = '';
+        mainActions.style.display = files.length ? 'flex' : 'none';
+
+        files.forEach((entry, i) => {
+            const el = document.createElement('div');
+            el.className = 'file-item';
+            el.draggable = true;
+            el.dataset.index = i;
+
+            const ext = entry.path.split('.').pop().toUpperCase().slice(0, 4);
+            const size = formatSize(entry.file.size);
+
+            el.innerHTML = `
+      <span class="grip">⠿</span>
+      <span class="file-icon">${ext}</span>
+      <div class="file-info">
+        <div class="file-name">${escapeHtml(entry.file.name)}</div>
+        <div class="file-path">${escapeHtml(entry.path)}</div>
+      </div>
+      <span class="file-size">${size}</span>
+      <button class="remove-btn" title="Odebrat">✕</button>
+    `;
+
+            el.querySelector('.remove-btn').addEventListener('click', () => {
+                files.splice(i, 1);
+                renderFileList();
+            });
+
+            // ── Reorder drag ──
+            el.addEventListener('dragstart', e => {
+                dragSrcIndex = i;
+                el.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+                dragSrcIndex = null;
+                document.querySelectorAll('.drag-over-item').forEach(x => x.classList.remove('drag-over-item'));
+            });
+            el.addEventListener('dragover', e => {
+                e.preventDefault();
+                if (dragSrcIndex !== null && dragSrcIndex !== i) {
+                    el.classList.add('drag-over-item');
+                }
+            });
+            el.addEventListener('dragleave', () => {
+                el.classList.remove('drag-over-item');
+            });
+            el.addEventListener('drop', e => {
+                e.preventDefault();
+                e.stopPropagation();
+                el.classList.remove('drag-over-item');
+                if (dragSrcIndex !== null && dragSrcIndex !== i) {
+                    const moved = files.splice(dragSrcIndex, 1)[0];
+                    files.splice(i, 0, moved);
+                    renderFileList();
+                }
+            });
+
+            fileListEl.appendChild(el);
+        });
+    }
+
+    // ── Merge ──
+    mergeBtn.addEventListener('click', async () => {
+        if (!files.length) return;
+
+        mergeBtn.disabled = true;
+        mergeBtn.textContent = '⏳ Načítání…';
+
+        try {
+            // Read all files
+            for (const entry of files) {
+                if (entry.content === null) {
+                    entry.content = await readFile(entry.file);
+                }
+            }
+
+            // Build merged output
+            const parts = files.map(entry => {
+                return `${entry.path}:\n${entry.content}`;
+            });
+            fullMergedContent = parts.join('\n\n');
+
+            // Display with line limit
+            const allLines = fullMergedContent.split('\n');
+            const totalLines = allLines.length;
+            const totalFiles = files.length;
+            const totalSize = formatSize(new Blob([fullMergedContent]).size);
+
+            if (totalLines > MAX_DISPLAY_LINES) {
+                outputBox.value = allLines.slice(0, MAX_DISPLAY_LINES).join('\n');
+                truncationWarning.classList.add('visible');
+            } else {
+                outputBox.value = fullMergedContent;
+                truncationWarning.classList.remove('visible');
+            }
+
+            outputMeta.textContent = `${totalFiles} souborů · ${totalLines.toLocaleString('cs')} řádků · ${totalSize}`;
+            outputSection.style.display = 'block';
+            outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        } catch (err) {
+            toast('Chyba při čtení souborů: ' + err.message);
+        }
+
+        mergeBtn.disabled = false;
+        mergeBtn.textContent = '⊕ Sloučit soubory';
+    });
+
+    // ── Copy ──
+    copyBtn.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(fullMergedContent);
+            toast('Zkopírováno do schránky ✓');
+        } catch {
+            // Fallback
+            outputBox.select();
+            document.execCommand('copy');
+            toast('Zkopírováno ✓');
+        }
+    });
+
+    // ── Download ──
+    downloadBtn.addEventListener('click', () => {
+        const blob = new Blob([fullMergedContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'merged-files.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+        toast('Soubor stažen ✓');
+    });
+
+    // ── Clear ──
+    clearBtn.addEventListener('click', () => {
+        files = [];
+        fullMergedContent = '';
+        outputBox.value = '';
+        outputSection.style.display = 'none';
+        truncationWarning.classList.remove('visible');
+        renderFileList();
+        toast('Vše vymazáno');
+    });
+
+    // ── Helpers ──
+    function readFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsText(file);
+        });
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        clearTimeout(toastEl._timer);
+        toastEl._timer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+    }
+</script>
+
+</body>
+</html>
