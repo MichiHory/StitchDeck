@@ -110,6 +110,17 @@
             opacity: 0;
             cursor: pointer;
         }
+        .path-capture {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            resize: none;
+            z-index: 1;
+        }
+        .dropzone input[type="file"] {
+            z-index: 2;
+        }
 
         /* ── File List ── */
         .file-list {
@@ -376,6 +387,7 @@
         <div class="dropzone-title">Přetáhněte soubory sem</div>
         <div class="dropzone-sub">nebo klikněte pro výběr souborů</div>
         <input type="file" id="fileInput" multiple>
+        <textarea id="pathCapture" class="path-capture"></textarea>
     </div>
 
     <!-- File List -->
@@ -427,6 +439,7 @@
     let files = []; // { file, path, content }
     let fullMergedContent = '';
     let dragSrcIndex = null;
+    const pathCapture = document.getElementById('pathCapture');
 
     // ── Drag & Drop Zone ──
     dropzone.addEventListener('dragover', e => {
@@ -441,16 +454,82 @@
     dropzone.addEventListener('drop', e => {
         e.preventDefault();
         dropzone.classList.remove('dragover');
-        handleFiles(e.dataTransfer.files);
+
+        const dt = e.dataTransfer;
+        const droppedFiles = dt.files;
+
+        // Try to extract local paths from the text/uri-list or text/plain data
+        // When files are dropped, some browsers/OS put the full paths in text data
+        const textData = dt.getData('text') || dt.getData('text/uri-list') || '';
+        const pathLines = textData.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+        // Also check the textarea value which may have captured paths
+        const textareaLines = pathCapture.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        pathCapture.value = '';
+
+        // Combine all captured path sources
+        const capturedPaths = pathLines.length >= droppedFiles.length ? pathLines : textareaLines;
+
+        handleFilesWithPaths(droppedFiles, capturedPaths);
     });
+
+    // Also listen on the textarea for drop events to capture path text
+    pathCapture.addEventListener('drop', e => {
+        // Let the event bubble up to the dropzone handler
+        // But first, grab the text data and store it in the textarea
+        const textData = e.dataTransfer.getData('text') || e.dataTransfer.getData('text/uri-list') || '';
+        if (textData) {
+            pathCapture.value = textData;
+        }
+    });
+
     fileInput.addEventListener('change', e => {
         handleFiles(e.target.files);
         fileInput.value = '';
     });
 
+    function handleFilesWithPaths(fileList, capturedPaths) {
+        for (let i = 0; i < fileList.length; i++) {
+            const f = fileList[i];
+            let path = f.webkitRelativePath || f.name;
+
+            // Try to match a captured path to this file by name
+            if (capturedPaths.length > 0) {
+                // First try: exact index mapping if counts match
+                if (capturedPaths.length === fileList.length) {
+                    const candidate = cleanPath(capturedPaths[i]);
+                    if (candidate && candidate.toLowerCase().endsWith(f.name.toLowerCase())) {
+                        path = candidate;
+                    }
+                } else {
+                    // Fallback: find a captured path that ends with this filename
+                    const match = capturedPaths.find(p =>
+                        cleanPath(p).toLowerCase().endsWith(f.name.toLowerCase())
+                    );
+                    if (match) {
+                        path = cleanPath(match);
+                        // Remove used path to avoid duplicate matching
+                        capturedPaths = capturedPaths.filter(p => p !== match);
+                    }
+                }
+            }
+
+            files.push({ file: f, path: path, content: null });
+        }
+        renderFileList();
+    }
+
+    function cleanPath(rawPath) {
+        if (!rawPath) return '';
+        // Remove file:// prefix if present
+        let p = rawPath.replace(/^file:\/\/\/?/, '');
+        // Decode URI encoding
+        try { p = decodeURIComponent(p); } catch(e) {}
+        return p.trim();
+    }
+
     function handleFiles(fileList) {
         for (const f of fileList) {
-            // Try to get the relative path (webkitRelativePath) or fall back to name
             const path = f.webkitRelativePath || f.name;
             files.push({ file: f, path: path, content: null });
         }
