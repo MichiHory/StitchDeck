@@ -398,11 +398,77 @@
             font-size: .9rem;
         }
 
+        /* ── Project Bar ── */
+        .project-bar {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            margin-bottom: 1.5rem;
+            padding: .6rem .8rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .project-bar .label {
+            color: var(--text-dim);
+            font-size: .8rem;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        .project-select {
+            flex: 1;
+            min-width: 0;
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: .4rem .6rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: .85rem;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237d7f8c' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right .6rem center;
+            padding-right: 1.8rem;
+        }
+        .project-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .project-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: .35rem .6rem;
+            border-radius: var(--radius-sm);
+            font-size: .8rem;
+            font-family: 'Outfit', sans-serif;
+            transition: all .15s;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+        }
+        .project-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text);
+            background: var(--surface-2);
+        }
+        .project-btn.danger:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+            background: var(--danger-dim);
+        }
+
         @media (max-width: 600px) {
             .app { padding: 1.5rem 1rem 3rem; }
             .actions { flex-direction: column; }
             .actions-right { margin-left: 0; }
             .output-actions { flex-wrap: wrap; }
+            .project-bar { flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -413,6 +479,15 @@
         <h1><span class="icon">⊕</span> File Merger</h1>
         <p>Přetáhněte soubory, sloučte a zkopírujte nebo stáhněte výsledek</p>
     </header>
+
+    <!-- Project Bar -->
+    <div class="project-bar">
+        <span class="label">Projekt:</span>
+        <select class="project-select" id="projectSelect"></select>
+        <button class="project-btn" id="newProjectBtn">+ Nový</button>
+        <button class="project-btn" id="renameProjectBtn">✎ Přejmenovat</button>
+        <button class="project-btn danger" id="deleteProjectBtn">✕ Smazat</button>
+    </div>
 
     <!-- Drop Zone -->
     <div class="dropzone" id="dropzone">
@@ -460,13 +535,16 @@
 
 <script>
     const MAX_DISPLAY_LINES = 20000;
+    const DB_NAME = 'fmerge';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'projects';
+
     const dropzone = document.getElementById('dropzone');
     const fileListEl = document.getElementById('fileList');
     const mainActions = document.getElementById('mainActions');
     const mergeBtn = document.getElementById('mergeBtn');
     const clearBtn = document.getElementById('clearBtn');
     const outputSection = document.getElementById('outputSection');
-    const outputBox = document.getElementById('outputBox');
     const lineNumbers = document.getElementById('lineNumbers');
     const outputContent = document.getElementById('outputContent');
     const outputMeta = document.getElementById('outputMeta');
@@ -474,12 +552,210 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const truncationWarning = document.getElementById('truncationWarning');
     const toastEl = document.getElementById('toast');
+    const projectSelect = document.getElementById('projectSelect');
+    const newProjectBtn = document.getElementById('newProjectBtn');
+    const renameProjectBtn = document.getElementById('renameProjectBtn');
+    const deleteProjectBtn = document.getElementById('deleteProjectBtn');
 
-    let files = []; // { file, path, content }
+    let files = []; // { name, path, content, size }
     let fullMergedContent = '';
     let dragSrcIndex = null;
     let renderGeneration = 0;
+    let currentProjectId = null;
+    let saveTimeout = null;
     const pathCapture = document.getElementById('pathCapture');
+
+    // ── IndexedDB ──
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function getAllProjects() {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function getProject(id) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.get(id);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function saveProject(project) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.put(project);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    async function deleteProject(id) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.delete(id);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    // ── Project Management ──
+    function generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    async function renderProjectSelect() {
+        const projects = await getAllProjects();
+        projectSelect.innerHTML = '';
+        projects.sort((a, b) => a.name.localeCompare(b.name, 'cs'));
+        for (const p of projects) {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name;
+            if (p.id === currentProjectId) opt.selected = true;
+            projectSelect.appendChild(opt);
+        }
+    }
+
+    async function switchToProject(id) {
+        const project = await getProject(id);
+        if (!project) return;
+        currentProjectId = id;
+        localStorage.setItem('fmerge_activeProject', id);
+        files = (project.files || []).map(f => ({
+            name: f.name,
+            path: f.path,
+            content: f.content,
+            size: f.size
+        }));
+        fullMergedContent = '';
+        outputContent.innerHTML = '';
+        lineNumbers.textContent = '';
+        outputSection.style.display = 'none';
+        truncationWarning.classList.remove('visible');
+        renderFileList();
+    }
+
+    function scheduleSave() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => persistCurrentProject(), 300);
+    }
+
+    async function persistCurrentProject() {
+        if (!currentProjectId) return;
+        // Read content for any files that haven't been read yet
+        for (const entry of files) {
+            if (entry.content === null && entry._file) {
+                entry.content = await readFile(entry._file);
+                entry.size = entry._file.size;
+            }
+        }
+        const project = await getProject(currentProjectId);
+        if (!project) return;
+        project.files = files.map(f => ({
+            name: f.name,
+            path: f.path,
+            content: f.content,
+            size: f.size
+        }));
+        await saveProject(project);
+    }
+
+    projectSelect.addEventListener('change', async () => {
+        await switchToProject(projectSelect.value);
+        await renderProjectSelect();
+    });
+
+    newProjectBtn.addEventListener('click', async () => {
+        const name = prompt('Název nového projektu:');
+        if (!name || !name.trim()) return;
+        const id = generateId();
+        await saveProject({ id, name: name.trim(), files: [] });
+        currentProjectId = id;
+        localStorage.setItem('fmerge_activeProject', id);
+        files = [];
+        fullMergedContent = '';
+        outputContent.innerHTML = '';
+        lineNumbers.textContent = '';
+        outputSection.style.display = 'none';
+        truncationWarning.classList.remove('visible');
+        renderFileList();
+        await renderProjectSelect();
+        toast('Projekt vytvořen: ' + name.trim());
+    });
+
+    renameProjectBtn.addEventListener('click', async () => {
+        if (!currentProjectId) return;
+        const project = await getProject(currentProjectId);
+        if (!project) return;
+        const name = prompt('Nový název projektu:', project.name);
+        if (!name || !name.trim() || name.trim() === project.name) return;
+        project.name = name.trim();
+        await saveProject(project);
+        await renderProjectSelect();
+        toast('Projekt přejmenován: ' + name.trim());
+    });
+
+    deleteProjectBtn.addEventListener('click', async () => {
+        if (!currentProjectId) return;
+        const projects = await getAllProjects();
+        if (projects.length <= 1) {
+            toast('Nelze smazat poslední projekt');
+            return;
+        }
+        const project = await getProject(currentProjectId);
+        if (!confirm('Smazat projekt "' + project.name + '"?')) return;
+        await deleteProject(currentProjectId);
+        const remaining = await getAllProjects();
+        currentProjectId = remaining[0].id;
+        localStorage.setItem('fmerge_activeProject', currentProjectId);
+        await switchToProject(currentProjectId);
+        await renderProjectSelect();
+        toast('Projekt smazán');
+    });
+
+    // ── Init ──
+    (async () => {
+        const projects = await getAllProjects();
+        if (projects.length === 0) {
+            const id = generateId();
+            await saveProject({ id, name: 'Výchozí projekt', files: [] });
+            currentProjectId = id;
+            localStorage.setItem('fmerge_activeProject', id);
+        } else {
+            const savedId = localStorage.getItem('fmerge_activeProject');
+            const exists = projects.find(p => p.id === savedId);
+            currentProjectId = exists ? savedId : projects[0].id;
+            localStorage.setItem('fmerge_activeProject', currentProjectId);
+        }
+        await renderProjectSelect();
+        await switchToProject(currentProjectId);
+    })();
 
     // ── Drag & Drop Zone ──
     dropzone.addEventListener('dragover', e => {
@@ -516,7 +792,7 @@
         }
     });
 
-    function handleFilesWithPaths(fileList, capturedPaths) {
+    async function handleFilesWithPaths(fileList, capturedPaths) {
         for (let i = 0; i < fileList.length; i++) {
             const f = fileList[i];
             let path = f.webkitRelativePath || f.name;
@@ -538,15 +814,17 @@
                 }
             }
 
+            const content = await readFile(f);
             const existingIndex = files.findIndex(entry => entry.path === path);
             if (existingIndex !== -1) {
-                files[existingIndex] = { file: f, path: path, content: null };
+                files[existingIndex] = { name: f.name, path, content, size: f.size };
                 toast('Aktualizován: ' + f.name);
             } else {
-                files.push({ file: f, path: path, content: null });
+                files.push({ name: f.name, path, content, size: f.size });
             }
         }
         renderFileList();
+        scheduleSave();
     }
 
     function cleanPath(rawPath) {
@@ -570,34 +848,26 @@
             const extRaw = entry.path.split('.').pop();
             const ext = extRaw.toUpperCase().slice(0, 4);
             const extColor = getExtColor(extRaw);
-            const size = formatSize(entry.file.size);
+            const size = formatSize(entry.size);
 
-            const linesSpanId = 'lines-' + currentGen + '-' + i;
+            const lineCount = entry.content ? entry.content.split('\n').length : 0;
+            const linesText = lineCount ? lineCount.toLocaleString('cs') + ' lines' : '…';
 
             el.innerHTML = `
       <span class="grip">⠿</span>
       <span class="file-icon" style="background:${extColor}22;color:${extColor};border:1px solid ${extColor}44">${ext}</span>
       <div class="file-info">
-        <div class="file-name">${escapeHtml(entry.file.name)}</div>
+        <div class="file-name">${escapeHtml(entry.name)}</div>
         <div class="file-path" title="${escapeHtml(entry.path)}">${escapeHtml(entry.path)}</div>
       </div>
-      <span class="file-meta">${size}<br><span id="${linesSpanId}">…</span></span>
+      <span class="file-meta">${size}<br>${linesText}</span>
       <button class="remove-btn" title="Odebrat">✕</button>
     `;
-
-            (async () => {
-                if (entry.content === null) {
-                    entry.content = await readFile(entry.file);
-                }
-                if (currentGen !== renderGeneration) return;
-                const lineCount = entry.content.split('\n').length;
-                const span = el.querySelector('#' + linesSpanId);
-                if (span) span.textContent = lineCount.toLocaleString('cs') + ' lines';
-            })();
 
             el.querySelector('.remove-btn').addEventListener('click', () => {
                 files.splice(i, 1);
                 renderFileList();
+                scheduleSave();
             });
 
             // ── Reorder drag ──
@@ -628,6 +898,7 @@
                     const moved = files.splice(dragSrcIndex, 1)[0];
                     files.splice(i, 0, moved);
                     renderFileList();
+                    scheduleSave();
                 }
             });
 
@@ -688,19 +959,12 @@
         mergeBtn.textContent = '⏳ Načítání…';
 
         try {
-            // Read all files
-            for (const entry of files) {
-                if (entry.content === null) {
-                    entry.content = await readFile(entry.file);
-                }
-            }
-
             let plainLinesArray = [];
             let htmlLinesArray = [];
 
             for (let i = 0; i < files.length; i++) {
                 const entry = files[i];
-                const contentStr = entry.content;
+                const contentStr = entry.content || '';
                 const lang = getLanguage(entry.path);
 
                 // Plain-text logika (pro schránku a soubor)
@@ -714,17 +978,14 @@
 
                 let highlightedContent = '';
                 if (lang !== 'plaintext' && window.hljs && hljs.getLanguage(lang)) {
-                    // ignoreIllegals ignoruje chyby při auto-detekci nebo nestandardní syntaxi (např. u Latte tagů v HTML)
                     highlightedContent = hljs.highlight(contentStr, { language: lang, ignoreIllegals: true }).value;
                 } else {
                     highlightedContent = escapeHtml(contentStr);
                 }
 
-                // Highlight.js nemodifikuje konce řádků, takže můžeme spolehlivě rozdělit HTML tokeny
                 const highlightedContentLines = highlightedContent.split('\n');
                 htmlLinesArray.push(...highlightedContentLines);
 
-                // Přidání prázdného řádku mezi soubory
                 if (i < files.length - 1) {
                     plainLinesArray.push('');
                     htmlLinesArray.push('');
@@ -798,6 +1059,7 @@
         outputSection.style.display = 'none';
         truncationWarning.classList.remove('visible');
         renderFileList();
+        scheduleSave();
         toast('Vše vymazáno');
     });
 

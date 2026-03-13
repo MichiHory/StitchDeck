@@ -1,5 +1,8 @@
 Utilita pro slučování souborů. utilita umí:
 
+* Spravovat projekty — vytvářet, přepínat, přejmenovávat a mazat projekty
+* Persistentně ukládat nahrané soubory do IndexedDB — soubory přežijí zavření prohlížeče
+* Automaticky obnovit poslední aktivní projekt při spuštění aplikace
 * Nahrávat soubory přetažením (drag & drop) na dropzonu
 * Zachytávat kompletní cesty souborů přes skrytý textarea při přetažení
 * Řadit soubory přetažením v seznamu (drag & drop reorder)
