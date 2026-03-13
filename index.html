@@ -76,7 +76,6 @@
             border-radius: var(--radius);
             padding: 3rem 2rem;
             text-align: center;
-            cursor: pointer;
             transition: all .25s ease;
             position: relative;
             background: var(--surface);
@@ -104,22 +103,12 @@
             color: var(--text-dim);
             font-size: .85rem;
         }
-        .dropzone input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
         .path-capture {
             position: absolute;
             inset: 0;
             opacity: 0;
-            cursor: pointer;
             resize: none;
             z-index: 1;
-        }
-        .dropzone input[type="file"] {
-            z-index: 2;
         }
 
         /* ── File List ── */
@@ -301,20 +290,37 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 1.25rem;
             color: var(--text);
             font-family: 'JetBrains Mono', monospace;
             font-size: .8rem;
             line-height: 1.65;
             resize: vertical;
-            white-space: pre;
             overflow: auto;
             tab-size: 4;
             -moz-tab-size: 4;
+            display: flex;
         }
-        .output-box:focus {
-            outline: none;
+        .output-box:focus-within {
             border-color: var(--accent);
+        }
+        .line-numbers {
+            padding: 1.25rem .75rem 1.25rem .5rem;
+            text-align: right;
+            color: var(--text-dim);
+            opacity: .5;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            flex-shrink: 0;
+            white-space: pre;
+            border-right: 1px solid var(--border);
+            min-width: 3.5rem;
+        }
+        .output-content {
+            padding: 1.25rem;
+            white-space: pre;
+            flex: 1;
+            min-width: 0;
         }
 
         /* ── Toast ── */
@@ -385,8 +391,7 @@
     <div class="dropzone" id="dropzone">
         <span class="dropzone-icon">📂</span>
         <div class="dropzone-title">Přetáhněte soubory sem</div>
-        <div class="dropzone-sub">nebo klikněte pro výběr souborů</div>
-        <input type="file" id="fileInput" multiple>
+        <div class="dropzone-sub">soubory budou přidány do seznamu níže</div>
         <textarea id="pathCapture" class="path-capture"></textarea>
     </div>
 
@@ -414,7 +419,7 @@
             <button class="btn btn-secondary" id="copyBtn">📋 Kopírovat</button>
             <button class="btn btn-secondary" id="downloadBtn">⬇ Stáhnout</button>
         </div>
-        <textarea class="output-box" id="outputBox" readonly spellcheck="false"></textarea>
+        <div class="output-box" id="outputBox"><div class="line-numbers" id="lineNumbers"></div><div class="output-content" id="outputContent"></div></div>
     </div>
 </div>
 
@@ -423,13 +428,14 @@
 <script>
     const MAX_DISPLAY_LINES = 20000;
     const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('fileInput');
     const fileListEl = document.getElementById('fileList');
     const mainActions = document.getElementById('mainActions');
     const mergeBtn = document.getElementById('mergeBtn');
     const clearBtn = document.getElementById('clearBtn');
     const outputSection = document.getElementById('outputSection');
     const outputBox = document.getElementById('outputBox');
+    const lineNumbers = document.getElementById('lineNumbers');
+    const outputContent = document.getElementById('outputContent');
     const outputMeta = document.getElementById('outputMeta');
     const copyBtn = document.getElementById('copyBtn');
     const downloadBtn = document.getElementById('downloadBtn');
@@ -483,11 +489,6 @@
         }
     });
 
-    fileInput.addEventListener('change', e => {
-        handleFiles(e.target.files);
-        fileInput.value = '';
-    });
-
     function handleFilesWithPaths(fileList, capturedPaths) {
         for (let i = 0; i < fileList.length; i++) {
             const f = fileList[i];
@@ -514,7 +515,12 @@
                 }
             }
 
-            files.push({ file: f, path: path, content: null });
+            const existingIndex = files.findIndex(entry => entry.path === path);
+            if (existingIndex !== -1) {
+                files[existingIndex] = { file: f, path: path, content: null };
+            } else {
+                files.push({ file: f, path: path, content: null });
+            }
         }
         renderFileList();
     }
@@ -531,7 +537,12 @@
     function handleFiles(fileList) {
         for (const f of fileList) {
             const path = f.webkitRelativePath || f.name;
-            files.push({ file: f, path: path, content: null });
+            const existingIndex = files.findIndex(entry => entry.path === path);
+            if (existingIndex !== -1) {
+                files[existingIndex] = { file: f, path: path, content: null };
+            } else {
+                files.push({ file: f, path: path, content: null });
+            }
         }
         renderFileList();
     }
@@ -626,14 +637,18 @@
             const totalLines = allLines.length;
             const totalFiles = files.length;
             const totalSize = formatSize(new Blob([fullMergedContent]).size);
+            let displayLines;
 
             if (totalLines > MAX_DISPLAY_LINES) {
-                outputBox.value = allLines.slice(0, MAX_DISPLAY_LINES).join('\n');
+                displayLines = allLines.slice(0, MAX_DISPLAY_LINES);
                 truncationWarning.classList.add('visible');
             } else {
-                outputBox.value = fullMergedContent;
+                displayLines = allLines;
                 truncationWarning.classList.remove('visible');
             }
+
+            outputContent.textContent = displayLines.join('\n');
+            lineNumbers.textContent = displayLines.map((_, i) => i + 1).join('\n');
 
             outputMeta.textContent = `${totalFiles} souborů · ${totalLines.toLocaleString('cs')} řádků · ${totalSize}`;
             outputSection.style.display = 'block';
@@ -654,8 +669,12 @@
             toast('Zkopírováno do schránky ✓');
         } catch {
             // Fallback
-            outputBox.select();
+            const ta = document.createElement('textarea');
+            ta.value = fullMergedContent;
+            document.body.appendChild(ta);
+            ta.select();
             document.execCommand('copy');
+            document.body.removeChild(ta);
             toast('Zkopírováno ✓');
         }
     });
@@ -676,7 +695,8 @@
     clearBtn.addEventListener('click', () => {
         files = [];
         fullMergedContent = '';
-        outputBox.value = '';
+        outputContent.textContent = '';
+        lineNumbers.textContent = '';
         outputSection.style.display = 'none';
         truncationWarning.classList.remove('visible');
         renderFileList();
