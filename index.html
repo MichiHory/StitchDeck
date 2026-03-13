@@ -179,10 +179,13 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .file-item .file-size {
+        .file-item .file-meta {
             color: var(--text-dim);
             font-size: .75rem;
             flex-shrink: 0;
+            text-align: right;
+            white-space: nowrap;
+            line-height: 1.4;
         }
         .file-item .remove-btn {
             background: none;
@@ -561,19 +564,34 @@
             el.draggable = true;
             el.dataset.index = i;
 
-            const ext = entry.path.split('.').pop().toUpperCase().slice(0, 4);
+            const extRaw = entry.path.split('.').pop();
+            const ext = extRaw.toUpperCase().slice(0, 4);
+            const extColor = getExtColor(extRaw);
             const size = formatSize(entry.file.size);
+
+            // Spočítat řádky — pokud ještě nemáme obsah, přečteme soubor na pozadí
+            const linesSpanId = 'lines-' + i;
 
             el.innerHTML = `
       <span class="grip">⠿</span>
-      <span class="file-icon">${ext}</span>
+      <span class="file-icon" style="background:${extColor}22;color:${extColor};border:1px solid ${extColor}44">${ext}</span>
       <div class="file-info">
         <div class="file-name">${escapeHtml(entry.file.name)}</div>
-        <div class="file-path">${escapeHtml(entry.path)}</div>
+        <div class="file-path" title="${escapeHtml(entry.path)}">${escapeHtml(entry.path)}</div>
       </div>
-      <span class="file-size">${size}</span>
+      <span class="file-meta">${size}<br><span id="${linesSpanId}">…</span></span>
       <button class="remove-btn" title="Odebrat">✕</button>
     `;
+
+            // Asynchronně doplnit počet řádků
+            (async () => {
+                if (entry.content === null) {
+                    entry.content = await readFile(entry.file);
+                }
+                const lineCount = entry.content.split('\n').length;
+                const span = document.getElementById(linesSpanId);
+                if (span) span.textContent = lineCount.toLocaleString('cs') + ' lines';
+            })();
 
             el.querySelector('.remove-btn').addEventListener('click', () => {
                 files.splice(i, 1);
@@ -613,6 +631,35 @@
 
             fileListEl.appendChild(el);
         });
+    }
+
+    // ── Barvy pro přípony souborů ──
+    function getExtColor(ext) {
+        ext = ext.toLowerCase();
+        const map = {
+            html: '#e44d26', htm: '#e44d26',
+            xml: '#f16529', svg: '#f7a41d',
+            js: '#f7df1e', mjs: '#f7df1e',
+            ts: '#3178c6', tsx: '#3178c6',
+            jsx: '#61dafb',
+            vue: '#42b883', svelte: '#ff3e00',
+            php: '#777bb4',
+            json: '#a8b9cc',
+            yaml: '#cb171e', yml: '#cb171e', neon: '#e25822',
+            latte: '#6cc644',
+            blade: '#f05340',
+            css: '#264de4', scss: '#cd6799', less: '#1d365d',
+            py: '#3776ab',
+            rb: '#cc342d',
+            java: '#f89820',
+            go: '#00add8',
+            rs: '#dea584',
+            c: '#555555', cpp: '#f34b7d', h: '#555555',
+            sh: '#89e051', bash: '#89e051',
+            sql: '#e38c00',
+            md: '#083fa1', txt: '#7d7f8c',
+        };
+        return map[ext] || '#6ee7a0';
     }
 
     // ── Mapování extenzí pro syntax highlighting ──
