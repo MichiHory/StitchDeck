@@ -41,7 +41,13 @@
 
         .app {
             display: flex;
+            flex-direction: column;
             min-height: 100vh;
+        }
+        .app-body {
+            display: flex;
+            flex: 1;
+            min-height: 0;
         }
 
         /* ── Sidebar ── */
@@ -50,35 +56,43 @@
             flex-shrink: 0;
             background: var(--surface);
             border-right: 1px solid var(--border);
-            padding: 1.25rem 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
             overflow-y: auto;
         }
         .sidebar-header {
-            padding: 0 1rem .75rem;
-            font-size: .75rem;
-            font-weight: 600;
-            color: var(--text-dim);
+            padding: .85rem 1rem;
+            font-size: .8rem;
+            font-weight: 700;
+            color: var(--text);
             text-transform: uppercase;
-            letter-spacing: .06em;
+            letter-spacing: .08em;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
         }
         .sidebar-header .add-btn {
-            background: none;
+            background: var(--accent);
             border: none;
-            color: var(--accent);
+            color: var(--bg);
             cursor: pointer;
-            font-size: 1.1rem;
+            font-size: 1rem;
             line-height: 1;
-            padding: 2px 4px;
-            border-radius: 4px;
-            transition: background .15s;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            transition: opacity .15s;
+            font-weight: 700;
         }
         .sidebar-header .add-btn:hover {
-            background: var(--accent-dim);
+            opacity: .85;
         }
         .project-list {
             flex: 1;
@@ -86,7 +100,7 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
-            padding: 0 .5rem;
+            padding: .5rem;
         }
         .project-item {
             display: flex;
@@ -151,35 +165,33 @@
             flex: 1;
             min-width: 0;
             max-width: 1200px;
-            padding: 2.5rem 2rem 4rem;
+            padding: 1.5rem 2rem 4rem;
+            overflow-y: auto;
         }
 
-        /* ── Header ── */
-        .header {
-            text-align: center;
-            margin-bottom: 2.5rem;
-        }
-        .header h1 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            display: inline-flex;
+        /* ── Top Bar ── */
+        .top-bar {
+            display: flex;
             align-items: center;
             gap: .6rem;
+            padding: .6rem 1rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
         }
-        .header h1 .icon {
-            width: 28px; height: 28px;
+        .top-bar .icon {
+            width: 24px; height: 24px;
             background: var(--accent);
-            border-radius: 7px;
+            border-radius: 6px;
             display: grid; place-items: center;
             color: var(--bg);
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 700;
+            flex-shrink: 0;
         }
-        .header p {
-            color: var(--text-dim);
-            margin-top: .4rem;
-            font-size: .9rem;
+        .top-bar h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
         }
 
         /* ── Drop Zone ── */
@@ -499,6 +511,68 @@
             display: flex;
         }
 
+        /* ── Modal ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity .2s ease;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+        }
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 400px;
+            transform: scale(.95);
+            transition: transform .2s ease;
+        }
+        .modal-overlay.visible .modal {
+            transform: scale(1);
+        }
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .modal-input {
+            width: 100%;
+            padding: .55rem .75rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: .9rem;
+            outline: none;
+            transition: border-color .15s;
+        }
+        .modal-input:focus {
+            border-color: var(--accent);
+        }
+        .modal-body {
+            color: var(--text-dim);
+            font-size: .9rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: .5rem;
+            margin-top: 1.25rem;
+        }
+
         /* ── Empty State ── */
         .empty-state {
             text-align: center;
@@ -526,6 +600,12 @@
 <body>
 
 <div class="app">
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <span class="icon">⊕</span>
+        <h1>File Merger</h1>
+    </div>
+    <div class="app-body">
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
@@ -537,11 +617,6 @@
 
     <!-- Main Content -->
     <div class="main-content">
-    <header class="header">
-        <h1><span class="icon">⊕</span> File Merger</h1>
-        <p>Přetáhněte soubory, sloučte a zkopírujte nebo stáhněte výsledek</p>
-    </header>
-
     <!-- Drop Zone -->
     <div class="dropzone" id="dropzone">
         <span class="dropzone-icon">📂</span>
@@ -577,6 +652,7 @@
         <div class="output-box" id="outputBox"><div class="line-numbers" id="lineNumbers"></div><div class="output-content" id="outputContent"></div></div>
     </div>
     </div><!-- /main-content -->
+    </div><!-- /app-body -->
 </div>
 
 <div class="toast" id="toast"></div>
@@ -608,6 +684,61 @@
     const toastEl = document.getElementById('toast');
     const projectList = document.getElementById('projectList');
     const newProjectBtn = document.getElementById('newProjectBtn');
+
+    // ── Modal ──
+    function showModal({ title, body, inputValue, placeholder, confirmText = 'OK', confirmClass = 'btn-primary', showInput = false }) {
+        return new Promise(resolve => {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div class="modal">
+                    <div class="modal-title">${escapeHtml(title)}</div>
+                    ${body ? `<div class="modal-body">${body}</div>` : ''}
+                    ${showInput ? `<input class="modal-input" type="text" value="${escapeHtml(inputValue || '')}" placeholder="${escapeHtml(placeholder || '')}">` : ''}
+                    <div class="modal-buttons">
+                        <button class="btn btn-secondary modal-cancel">Zrušit</button>
+                        <button class="btn ${confirmClass} modal-confirm">${escapeHtml(confirmText)}</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('visible'));
+
+            const input = overlay.querySelector('.modal-input');
+            const confirmBtn = overlay.querySelector('.modal-confirm');
+            const cancelBtn = overlay.querySelector('.modal-cancel');
+
+            if (input) {
+                input.focus();
+                input.select();
+            } else {
+                confirmBtn.focus();
+            }
+
+            function close(value) {
+                overlay.classList.remove('visible');
+                overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+                resolve(value);
+            }
+
+            confirmBtn.addEventListener('click', () => {
+                close(showInput ? (input.value.trim() || null) : true);
+            });
+            cancelBtn.addEventListener('click', () => close(null));
+            overlay.addEventListener('click', e => {
+                if (e.target === overlay) close(null);
+            });
+            if (input) {
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') confirmBtn.click();
+                    if (e.key === 'Escape') close(null);
+                });
+            }
+            overlay.addEventListener('keydown', e => {
+                if (e.key === 'Escape') close(null);
+            });
+        });
+    }
 
     let files = []; // { name, path, content, size }
     let fullMergedContent = '';
@@ -703,20 +834,31 @@
                 await renderProjectList();
             });
             el.querySelector('.rename-btn').addEventListener('click', async () => {
-                const name = prompt('Nový název projektu:', p.name);
-                if (!name || !name.trim() || name.trim() === p.name) return;
+                const name = await showModal({
+                    title: 'Přejmenovat projekt',
+                    showInput: true,
+                    inputValue: p.name,
+                    confirmText: 'Přejmenovat',
+                });
+                if (!name || name === p.name) return;
                 const project = await getProject(p.id);
-                project.name = name.trim();
+                project.name = name;
                 await saveProject(project);
                 await renderProjectList();
-                toast('Projekt přejmenován: ' + name.trim());
+                toast('Projekt přejmenován: ' + name);
             });
             el.querySelector('.delete-btn').addEventListener('click', async () => {
                 if (projects.length <= 1) {
                     toast('Nelze smazat poslední projekt');
                     return;
                 }
-                if (!confirm('Smazat projekt "' + p.name + '"?')) return;
+                const confirmed = await showModal({
+                    title: 'Smazat projekt',
+                    body: `Opravdu chcete smazat projekt <strong>${escapeHtml(p.name)}</strong>?`,
+                    confirmText: 'Smazat',
+                    confirmClass: 'btn-danger',
+                });
+                if (!confirmed) return;
                 await deleteProject(p.id);
                 if (p.id === currentProjectId) {
                     const remaining = await getAllProjects();
@@ -776,10 +918,15 @@
     }
 
     newProjectBtn.addEventListener('click', async () => {
-        const name = prompt('Název nového projektu:');
-        if (!name || !name.trim()) return;
+        const name = await showModal({
+            title: 'Nový projekt',
+            showInput: true,
+            placeholder: 'Název projektu',
+            confirmText: 'Vytvořit',
+        });
+        if (!name) return;
         const id = generateId();
-        await saveProject({ id, name: name.trim(), files: [] });
+        await saveProject({ id, name, files: [] });
         currentProjectId = id;
         localStorage.setItem('fmerge_activeProject', id);
         files = [];
