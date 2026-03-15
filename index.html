@@ -552,9 +552,9 @@
         /* ── Toast ── */
         .toast {
             position: fixed;
-            top: 4.5rem;
-            right: 1.5rem;
-            transform: translateX(120%);
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(120%);
             background: #f59e0b;
             color: #1a1a1a;
             font-family: 'Outfit', sans-serif;
@@ -568,8 +568,12 @@
             z-index: 999;
         }
         .toast.show {
-            transform: translateX(0);
+            transform: translateX(-50%) translateY(0);
             opacity: 1;
+        }
+        .toast.success {
+            background: #0da142;
+            color: #fff;
         }
 
         /* ── Truncation Warning ── */
@@ -1018,7 +1022,7 @@
                 project.name = name;
                 await saveProject(project);
                 await renderProjectList();
-                toast('Projekt přejmenován: ' + name);
+                toast('Projekt přejmenován: ' + name, 'success');
             });
             el.querySelector('.delete-btn').addEventListener('click', async () => {
                 if (projects.length <= 1) {
@@ -1040,7 +1044,7 @@
                     await switchToProject(currentProjectId);
                 }
                 await renderProjectList();
-                toast('Projekt smazán');
+                toast('Projekt smazán', 'success');
             });
             projectList.appendChild(el);
         }
@@ -1110,7 +1114,7 @@
         truncationWarning.classList.remove('visible');
         renderFileList();
         await renderProjectList();
-        toast('Projekt vytvořen: ' + name.trim());
+        toast('Projekt vytvořen: ' + name.trim(), 'success');
     });
 
     // ── Init ──
@@ -1240,7 +1244,7 @@
             if (existingIndex !== -1) {
                 files[existingIndex] = { name: f.name, path, content, size: f.size };
                 updatedIndices.push(existingIndex);
-                toast('Aktualizován: ' + f.name);
+                toast('Aktualizován: ' + f.name, 'success');
             } else {
                 files.push({ name: f.name, path, content, size: f.size });
             }
@@ -1492,7 +1496,7 @@
     copyBtn.addEventListener('click', async () => {
         try {
             await navigator.clipboard.writeText(fullMergedContent);
-            toast('Zkopírováno do schránky ✓');
+            toast('Zkopírováno do schránky', 'success');
         } catch {
             const ta = document.createElement('textarea');
             ta.value = fullMergedContent;
@@ -1500,7 +1504,7 @@
             ta.select();
             document.execCommand('copy');
             document.body.removeChild(ta);
-            toast('Zkopírováno ✓');
+            toast('Zkopírováno', 'success');
         }
     });
 
@@ -1513,7 +1517,7 @@
         a.download = 'merged-files.txt';
         a.click();
         URL.revokeObjectURL(url);
-        toast('Soubor stažen ✓');
+        toast('Soubor stažen', 'success');
     });
 
     // ── Clear ──
@@ -1533,7 +1537,7 @@
         truncationWarning.classList.remove('visible');
         renderFileList();
         scheduleSave();
-        toast('Vše vymazáno');
+        toast('Vše vymazáno', 'success');
     });
 
     // ── Helpers ──
@@ -1612,11 +1616,17 @@
         }, { once: true });
     }
 
-    function toast(msg) {
-        toastEl.textContent = msg;
+    function toast(msg, type) {
+        toastEl.classList.remove('success');
+        if (type === 'success') {
+            toastEl.textContent = '✓ ' + msg;
+            toastEl.classList.add('success');
+        } else {
+            toastEl.textContent = msg;
+        }
         toastEl.classList.add('show');
         clearTimeout(toastEl._timer);
-        toastEl._timer = setTimeout(() => toastEl.classList.remove('show'), 3500);
+        toastEl._timer = setTimeout(() => { toastEl.classList.remove('show', 'success'); }, 3500);
     }
 </script>
 
