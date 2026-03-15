@@ -95,7 +95,7 @@ const translations: Record<LangKey, Record<string, string>> = {
         clear: 'Vymazat',
         allCleared: 'Vše vymazáno',
         updated: 'Aktualizován: {name}',
-        lines: 'lines',
+        lines: 'řádků',
         downloadPdf: '\u2B07 Stáhnout PDF',
         pdfDownloaded: 'PDF staženo',
         pdfBinaryContent: 'Binární obsah PDF',

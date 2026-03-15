@@ -10,18 +10,28 @@ import json from 'highlight.js/lib/languages/json';
 import javascript from 'highlight.js/lib/languages/javascript';
 import blade from 'highlight.js/lib/languages/php-template';
 
-import { state, MAX_DISPLAY_LINES } from './state';
-import { escapeHtml, formatSize, countTokens, formatTokens, getLanguage } from './helpers';
-import { t } from './i18n';
-import { toast } from './toast';
-import { showModal } from './modal';
-import { renderFileList } from './file-list';
-import { scheduleSave } from './projects';
-import { base64ToUint8Array } from './pdf';
+import {MAX_DISPLAY_LINES, state} from './state';
+import {countTokens, escapeHtml, formatSize, formatTokens, getLanguage} from './helpers';
+import {t} from './i18n';
+import {toast} from './toast';
+import {showModal} from './modal';
+import {renderFileList} from './file-list';
+import {scheduleSave} from './projects';
+import {base64ToUint8Array} from './pdf';
 import {
-    mergeBtn, clearBtn, copyBtn, downloadBtn, downloadPdfBtn,
-    outputSection, outputContent, lineNumbers, outputMeta,
-    truncationWarning, togglePaths, toggleTrimEmpty, togglePdfToText,
+    clearBtn,
+    copyBtn,
+    downloadBtn,
+    downloadPdfBtn,
+    lineNumbers,
+    mergeBtn,
+    outputContent,
+    outputMeta,
+    outputSection,
+    togglePaths,
+    togglePdfToText,
+    toggleTrimEmpty,
+    truncationWarning,
 } from './dom';
 
 // Register highlight.js languages
@@ -65,8 +75,7 @@ export function initMerge(): void {
 
                 if (entry.pdfData) {
                     if (pdfToText) {
-                        const extractedText = await extractPdfText(entry.pdfData);
-                        let contentStr = extractedText;
+                        let contentStr = await extractPdfText(entry.pdfData);
                         if (trimEmpty) {
                             contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
                         }
