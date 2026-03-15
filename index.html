@@ -409,6 +409,11 @@
         .output-actions {
             display: flex;
             gap: .5rem;
+            margin-bottom: .5rem;
+        }
+        .btn-sm {
+            font-size: .78rem;
+            padding: .45rem 1rem;
         }
         .output-box {
             width: 100%;
@@ -602,7 +607,7 @@
 <div class="app">
     <!-- Top Bar -->
     <div class="top-bar">
-        <span class="icon">⊕</span>
+        <span class="icon">⛙</span>
         <h1>File Merger</h1>
     </div>
     <div class="app-body">
@@ -630,7 +635,7 @@
 
     <!-- Actions -->
     <div class="actions" id="mainActions" style="display:none">
-        <button class="btn btn-primary" id="mergeBtn">⊕ Sloučit soubory</button>
+        <button class="btn btn-primary" id="mergeBtn">⛙ Sloučit soubory</button>
         <div class="actions-right">
             <button class="btn btn-danger" id="clearBtn">Vymazat vše</button>
         </div>
@@ -646,8 +651,8 @@
             ⚠️ <span>Zobrazení je omezeno na 20 000 řádků. Stáhněte soubor pro kompletní obsah.</span>
         </div>
         <div class="output-actions">
-            <button class="btn btn-secondary" id="copyBtn">📋 Kopírovat</button>
-            <button class="btn btn-secondary" id="downloadBtn">⬇ Stáhnout</button>
+            <button class="btn btn-secondary btn-sm" id="copyBtn">📋 Kopírovat</button>
+            <button class="btn btn-secondary btn-sm" id="downloadBtn">⬇ Stáhnout</button>
         </div>
         <div class="output-box" id="outputBox"><div class="line-numbers" id="lineNumbers"></div><div class="output-content" id="outputContent"></div></div>
     </div>
@@ -1220,7 +1225,7 @@
         }
 
         mergeBtn.disabled = false;
-        mergeBtn.textContent = '⊕ Sloučit soubory';
+        mergeBtn.textContent = '⛙ Sloučit soubory';
     });
 
     // ── Copy ──
