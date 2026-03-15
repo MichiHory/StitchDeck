@@ -170,6 +170,8 @@
             padding: 1.5rem 2rem 4rem;
             overflow-y: auto;
             order: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         /* ── Top Bar ── */
@@ -210,6 +212,7 @@
             justify-content: center;
             background: var(--surface);
             position: relative;
+            flex: 1;
             min-height: 260px;
         }
         .dropzone.hidden {
@@ -246,14 +249,10 @@
             z-index: 1;
         }
 
-        /* ── File List Drop Overlay ── */
-        .file-list-wrapper {
-            position: relative;
-        }
-        .file-list-drop-overlay {
+        /* ── Main Content Drop Overlay ── */
+        .main-content-drop-overlay {
             display: none;
-            position: absolute;
-            inset: 0;
+            position: fixed;
             border: 2px dashed var(--accent);
             border-radius: var(--radius);
             background: var(--accent-dim);
@@ -264,14 +263,14 @@
             flex-direction: column;
             pointer-events: none;
         }
-        .file-list-wrapper.drag-active .file-list-drop-overlay {
+        .main-content-drop-overlay.active {
             display: flex;
         }
-        .file-list-drop-overlay .dropzone-icon {
+        .main-content-drop-overlay .dropzone-icon {
             font-size: 2rem;
             margin-bottom: .5rem;
         }
-        .file-list-drop-overlay .dropzone-title {
+        .main-content-drop-overlay .dropzone-title {
             font-size: .95rem;
         }
 
@@ -767,12 +766,14 @@
         <textarea id="pathCapture" class="path-capture"></textarea>
     </div>
 
+    <!-- Drop Overlay (visible when dragging files over main content) -->
+    <div class="main-content-drop-overlay" id="mainContentDropOverlay">
+        <span class="dropzone-icon">📂</span>
+        <div class="dropzone-title">Přetáhněte soubory sem</div>
+    </div>
+
     <!-- File List -->
     <div class="file-list-wrapper" id="fileListWrapper">
-        <div class="file-list-drop-overlay">
-            <span class="dropzone-icon">📂</span>
-            <div class="dropzone-title">Přetáhněte soubory sem</div>
-        </div>
         <div class="file-list" id="fileList"></div>
     </div>
 
@@ -838,6 +839,8 @@
     const dropzone = document.getElementById('dropzone');
     const fileListEl = document.getElementById('fileList');
     const fileListWrapper = document.getElementById('fileListWrapper');
+    const mainContentEl = document.querySelector('.main-content');
+    const mainContentDropOverlay = document.getElementById('mainContentDropOverlay');
     const mainActions = document.getElementById('mainActions');
     const mergeBtn = document.getElementById('mergeBtn');
     const clearBtn = document.getElementById('clearBtn');
@@ -1160,29 +1163,45 @@
     });
     dropzone.addEventListener('drop', handleDrop);
 
-    // File list wrapper as drop target (when files already exist)
-    let wrapperDragCounter = 0;
-    fileListWrapper.addEventListener('dragenter', e => {
+    // Main content as drop target (when files already exist)
+    let mainDragCounter = 0;
+    function showMainOverlay() {
+        const rect = mainContentEl.getBoundingClientRect();
+        mainContentDropOverlay.style.top = rect.top + 'px';
+        mainContentDropOverlay.style.left = rect.left + 'px';
+        mainContentDropOverlay.style.width = rect.width + 'px';
+        mainContentDropOverlay.style.height = rect.height + 'px';
+        mainContentDropOverlay.classList.add('active');
+    }
+    function hideMainOverlay() {
+        mainContentDropOverlay.classList.remove('active');
+    }
+    mainContentEl.addEventListener('dragenter', e => {
         if (dragSrcIndex !== null) return;
+        if (!files.length) return; // empty state uses the dropzone directly
         e.preventDefault();
-        wrapperDragCounter++;
-        fileListWrapper.classList.add('drag-active');
+        mainDragCounter++;
+        if (mainDragCounter === 1) showMainOverlay();
     });
-    fileListWrapper.addEventListener('dragover', e => {
+    mainContentEl.addEventListener('dragover', e => {
         if (dragSrcIndex !== null) return;
+        if (!files.length) return;
         e.preventDefault();
     });
-    fileListWrapper.addEventListener('dragleave', () => {
+    mainContentEl.addEventListener('dragleave', () => {
         if (dragSrcIndex !== null) return;
-        wrapperDragCounter--;
-        if (wrapperDragCounter <= 0) {
-            wrapperDragCounter = 0;
-            fileListWrapper.classList.remove('drag-active');
+        if (!files.length) return;
+        mainDragCounter--;
+        if (mainDragCounter <= 0) {
+            mainDragCounter = 0;
+            hideMainOverlay();
         }
     });
-    fileListWrapper.addEventListener('drop', e => {
-        wrapperDragCounter = 0;
+    mainContentEl.addEventListener('drop', e => {
+        mainDragCounter = 0;
+        hideMainOverlay();
         if (dragSrcIndex !== null) return; // let reorder handle it
+        if (!files.length) return; // empty state handled by dropzone
         handleDrop(e);
     });
 
