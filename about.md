@@ -14,7 +14,7 @@ Utilita pro slučování souborů. utilita umí:
 * Zobrazit sloučený výstup s číslováním řádků (čísla nejsou součástí textu — nejdou kopírovat)
 * Zobrazit sloučený výstup s omezením na 20 000 řádků s upozorněním na zkrácení
 * Zobrazit sloučený výstup se syntax highlightingem podle typu souboru (HTML, XML/SVG, JS, TS, TSX/JSX, PHP, JSON, YAML/YML, NEON, Latte, Blade, CSS/SCSS/LESS) — jazyk se detekuje z přípony v hlavičce každé sekce, názvy souborů jsou zvýrazněny neonově zeleně, highlighting je čistě vizuální a není součástí kopírovaného ani staženého textu
-* Zkopírovat sloučený obsah do schránky (bez čísel řádků a bez syntax highlightingu) — používá moderní Clipboard API (`navigator.clipboard.writeText` s fallbackem na `navigator.clipboard.write`), pokud kopírování selže, zobrazí se upozornění
+* Zkopírovat sloučený obsah do schránky (bez čísel řádků a bez syntax highlightingu) — používá nativní Clipboard API (`navigator.clipboard.writeText`), pokud kopírování selže, zobrazí se upozornění
 * Stáhnout sloučený obsah s možností zvolit název souboru a formát (txt, md, json, xml, csv, html, log) — výchozí název `merged-files`, výchozí formát `.txt`, výběr přes modální dialog
 * Slučování PDF souborů — automatická detekce PDF souborů v seznamu, tlačítko „Download PDF" se zobrazí jakmile je v seznamu alespoň jeden PDF soubor. Pokud jsou všechny soubory PDF, sloučí se do jednoho PDF. Pokud jsou v seznamu i textové soubory, jejich obsah se převede na PDF stránky (Courier, A4, automatické zalamování řádků) a vloží do výsledného PDF. PDF soubory se v textovém výstupu zobrazují jako placeholder `[PDF – binární obsah]`. Používá knihovnu pdf-lib.
 * Vymazat vše (soubory i výstup) jedním tlačítkem — s potvrzovacím dialogem
@@ -26,7 +26,7 @@ Utilita pro slučování souborů. utilita umí:
 
 ## Technický stack
 
-* **Build**: Vite + TypeScript
+* **Build**: Vite 8 (Rolldown) + TypeScript
 * **Závislosti**: highlight.js (syntax highlighting), pdf-lib (PDF operace)
 * **Struktura projektu**:
   - `index.html` — HTML šablona

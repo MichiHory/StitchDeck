@@ -10,7 +10,6 @@ import json from 'highlight.js/lib/languages/json';
 import javascript from 'highlight.js/lib/languages/javascript';
 import blade from 'highlight.js/lib/languages/php-template';
 
-import * as clipboard from 'clipboard-polyfill';
 import { state, MAX_DISPLAY_LINES } from './state';
 import { escapeHtml, formatSize, getLanguage } from './helpers';
 import { t } from './i18n';
@@ -143,7 +142,18 @@ export function initMerge(): void {
     // Copy
     copyBtn.addEventListener('click', async () => {
         try {
-            await clipboard.writeText(state.fullMergedContent);
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(state.fullMergedContent);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = state.fullMergedContent;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
             toast(t('copiedToClipboard'), 'success');
         } catch {
             toast(t('copyFailed'));
