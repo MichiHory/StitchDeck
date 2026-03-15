@@ -1,0 +1,25 @@
+// Centralized DOM element references
+
+export const dropzone = document.getElementById('dropzone')!;
+export const fileListEl = document.getElementById('fileList')!;
+export const fileListWrapper = document.getElementById('fileListWrapper')!;
+export const mainContentEl = document.querySelector<HTMLElement>('.main-content')!;
+export const mainContentDropOverlay = document.getElementById('mainContentDropOverlay')!;
+export const mainActions = document.getElementById('mainActions')!;
+export const mergeBtn = document.getElementById('mergeBtn')! as HTMLButtonElement;
+export const clearBtn = document.getElementById('clearBtn')! as HTMLButtonElement;
+export const outputSection = document.getElementById('outputSection')!;
+export const lineNumbers = document.getElementById('lineNumbers')!;
+export const outputContent = document.getElementById('outputContent')!;
+export const outputMeta = document.getElementById('outputMeta')!;
+export const copyBtn = document.getElementById('copyBtn')! as HTMLButtonElement;
+export const downloadBtn = document.getElementById('downloadBtn')! as HTMLButtonElement;
+export const truncationWarning = document.getElementById('truncationWarning')!;
+export const projectListEl = document.getElementById('projectList')!;
+export const newProjectBtn = document.getElementById('newProjectBtn')! as HTMLButtonElement;
+export const mergeOptions = document.getElementById('mergeOptions')!;
+export const togglePaths = document.getElementById('togglePaths')! as HTMLInputElement;
+export const toggleTrimEmpty = document.getElementById('toggleTrimEmpty')! as HTMLInputElement;
+export const downloadPdfBtn = document.getElementById('downloadPdfBtn')! as HTMLButtonElement;
+export const pathCapture = document.getElementById('pathCapture')! as HTMLTextAreaElement;
+export const langSwitcher = document.getElementById('langSwitcher')!;

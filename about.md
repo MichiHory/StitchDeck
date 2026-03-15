@@ -23,3 +23,25 @@ Utilita pro slučování souborů. utilita umí:
 * Při aktualizaci již nahraného souboru zobrazit vizuální efekt — starý box se rozpadne na zelené částice (particle burst), které se rozletí do okolí, a nový box se nafoukne jako bublina (grow-in animace)
 * Modalni okna pro akce
 * Internacionalizace (i18n) — podpora více jazyků s přepínačem v horní liště, výchozí jazyk angličtina, dostupné jazyky: EN, CS. Překlad používá slovníkový systém s `t(key, params)` funkcí, statické HTML prvky mají `data-i18n` atributy, jazyková preference se ukládá do localStorage
+
+## Technický stack
+
+* **Build**: Vite + TypeScript
+* **Závislosti**: highlight.js (syntax highlighting), pdf-lib (PDF operace)
+* **Struktura projektu**:
+  - `index.html` — HTML šablona
+  - `src/main.ts` — vstupní bod, inicializace
+  - `src/styles/main.css` — všechny styly
+  - `src/i18n.ts` — překlady a i18n funkce
+  - `src/db.ts` — IndexedDB operace, typy
+  - `src/state.ts` — sdílený stav aplikace
+  - `src/dom.ts` — reference na DOM elementy
+  - `src/helpers.ts` — utility funkce (escapeHtml, formatSize, getExtColor, getLanguage, cleanPath, readFile)
+  - `src/toast.ts` — toast notifikace
+  - `src/modal.ts` — modální dialogy
+  - `src/animations.ts` — particle burst a grow-in animace
+  - `src/projects.ts` — správa projektů (CRUD, persistence, přepínání)
+  - `src/file-list.ts` — renderování seznamu souborů, drag & drop reorder
+  - `src/dropzone.ts` — drag & drop nahrávání souborů
+  - `src/merge.ts` — slučování, kopírování, stahování (text i PDF)
+  - `src/lang-switcher.ts` — přepínač jazyků
