@@ -15,7 +15,7 @@ Utilita pro slučování souborů. utilita umí:
 * Zobrazit sloučený výstup s omezením na 20 000 řádků s upozorněním na zkrácení
 * Zobrazit sloučený výstup se syntax highlightingem podle typu souboru (HTML, XML/SVG, JS, TS, TSX/JSX, PHP, JSON, YAML/YML, NEON, Latte, Blade, CSS/SCSS/LESS) — jazyk se detekuje z přípony v hlavičce každé sekce, názvy souborů jsou zvýrazněny neonově zeleně, highlighting je čistě vizuální a není součástí kopírovaného ani staženého textu
 * Zkopírovat sloučený obsah do schránky (bez čísel řádků a bez syntax highlightingu)
-* Stáhnout sloučený obsah jako `merged-files.txt`
+* Stáhnout sloučený obsah s možností zvolit název souboru a formát (txt, md, json, xml, csv, html, log) — výchozí název `merged-files`, výchozí formát `.txt`, výběr přes modální dialog
 * Vymazat vše (soubory i výstup) jedním tlačítkem — s potvrzovacím dialogem
 * Zobrazovat metadata výstupu (počet souborů, řádků, velikost)
 * Zobrazovat toast notifikace pro zpětnou vazbu uživateli (pozicované dole uprostřed) — úspěšné akce mají zelené pozadí s bílým textem a checkmarkem, varovné/chybové zůstávají žluté
