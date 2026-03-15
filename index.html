@@ -243,6 +243,7 @@
             gap: .4rem;
         }
         .file-item {
+            position: relative;
             display: flex;
             align-items: center;
             gap: .75rem;
@@ -250,6 +251,7 @@
             background: var(--surface-2);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
+            overflow: visible;
             font-size: .85rem;
             cursor: grab;
             transition: background .15s, border-color .15s;
@@ -264,6 +266,38 @@
         .file-item.drag-over-item {
             border-color: var(--accent);
             background: var(--accent-dim);
+        }
+        /* ── Updated file: bubble burst + regrow ── */
+        .file-item.grow-in {
+            animation: file-grow-in .45s cubic-bezier(.34,1.56,.64,1) forwards;
+            border-color: #22c55e;
+        }
+        .file-item.grow-in.settled {
+            transition: border-color .4s ease;
+            border-color: var(--border);
+        }
+        @keyframes file-grow-in {
+            0% {
+                transform: scale(.3);
+                opacity: 0;
+            }
+            60% {
+                opacity: 1;
+            }
+            80% {
+                transform: scale(1.02);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .burst-particle {
+            position: fixed;
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 1000;
+            will-change: transform, opacity;
         }
         .file-item .grip {
             color: var(--text-dim);
@@ -479,7 +513,7 @@
         /* ── Toast ── */
         .toast {
             position: fixed;
-            top: 1.5rem;
+            top: 4.5rem;
             right: 1.5rem;
             transform: translateX(120%);
             background: #f59e0b;
@@ -1080,6 +1114,7 @@
     });
 
     async function handleFilesWithPaths(fileList, capturedPaths) {
+        const updatedIndices = [];
         for (let i = 0; i < fileList.length; i++) {
             const f = fileList[i];
             let path = f.webkitRelativePath || f.name;
@@ -1105,12 +1140,27 @@
             const existingIndex = files.findIndex(entry => entry.path === path);
             if (existingIndex !== -1) {
                 files[existingIndex] = { name: f.name, path, content, size: f.size };
+                updatedIndices.push(existingIndex);
                 toast('Aktualizován: ' + f.name);
             } else {
                 files.push({ name: f.name, path, content, size: f.size });
             }
         }
+        // Capture positions of updated items BEFORE re-render
+        const burstRects = {};
+        updatedIndices.forEach(idx => {
+            const oldEl = fileListEl.querySelector(`[data-index="${idx}"]`);
+            if (oldEl) burstRects[idx] = oldEl.getBoundingClientRect();
+        });
+
         renderFileList();
+
+        updatedIndices.forEach(idx => {
+            const el = fileListEl.querySelector(`[data-index="${idx}"]`);
+            if (!el) return;
+            const rect = burstRects[idx] || el.getBoundingClientRect();
+            burstAndRegrow(el, rect);
+        });
         scheduleSave();
     }
 
@@ -1395,6 +1445,60 @@
         const d = document.createElement('div');
         d.textContent = str;
         return d.innerHTML;
+    }
+
+    function burstAndRegrow(el, rect) {
+        const PARTICLE_COUNT = 18;
+        const colors = ['#22c55e','#4ade80','#16a34a','#86efac','#bbf7d0','#a3e635'];
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+
+        // Spawn particles at the old box position
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const p = document.createElement('div');
+            p.className = 'burst-particle';
+            const w = 4 + Math.random() * 8;
+            const h = 3 + Math.random() * 6;
+            p.style.width = w + 'px';
+            p.style.height = h + 'px';
+            p.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+            // Start at random position along box edges
+            let sx, sy;
+            const edge = Math.floor(Math.random() * 4);
+            if (edge === 0)      { sx = rect.left + Math.random() * rect.width; sy = rect.top; }
+            else if (edge === 1) { sx = rect.left + Math.random() * rect.width; sy = rect.bottom; }
+            else if (edge === 2) { sx = rect.left; sy = rect.top + Math.random() * rect.height; }
+            else                 { sx = rect.right; sy = rect.top + Math.random() * rect.height; }
+
+            p.style.left = sx + 'px';
+            p.style.top = sy + 'px';
+
+            // Fly outward from center
+            const angle = Math.atan2(sy - cy, sx - cx) + (Math.random() - .5) * .8;
+            const dist = 40 + Math.random() * 80;
+            const dx = Math.cos(angle) * dist;
+            const dy = Math.sin(angle) * dist + (Math.random() * 20 - 5); // slight gravity
+            const rot = (Math.random() - .5) * 360;
+            const dur = 350 + Math.random() * 250;
+
+            document.body.appendChild(p);
+
+            p.animate([
+                { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 },
+                { transform: `translate(${dx}px,${dy}px) rotate(${rot}deg) scale(.2)`, opacity: 0 }
+            ], { duration: dur, easing: 'cubic-bezier(.25,.46,.45,.94)', fill: 'forwards' })
+            .onfinish = () => p.remove();
+        }
+
+        // Grow in the new element like an inflating bubble
+        el.classList.add('grow-in');
+        el.addEventListener('animationend', () => {
+            el.classList.add('settled');
+            setTimeout(() => {
+                el.classList.remove('grow-in', 'settled');
+            }, 500);
+        }, { once: true });
     }
 
     function toast(msg) {

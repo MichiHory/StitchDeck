@@ -18,5 +18,6 @@ Utilita pro slučování souborů. utilita umí:
 * Stáhnout sloučený obsah jako `merged-files.txt`
 * Vymazat vše (soubory i výstup) jedním tlačítkem — s potvrzovacím dialogem
 * Zobrazovat metadata výstupu (počet souborů, řádků, velikost)
-* Zobrazovat toast notifikace pro zpětnou vazbu uživateli
+* Zobrazovat toast notifikace pro zpětnou vazbu uživateli (pozicované pod horní lištou)
+* Při aktualizaci již nahraného souboru zobrazit vizuální efekt — starý box se rozpadne na zelené částice (particle burst), které se rozletí do okolí, a nový box se nafoukne jako bublina (grow-in animace)
 * Modalni okna pro akce
