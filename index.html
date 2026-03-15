@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -197,6 +197,34 @@
             font-size: 1rem;
             font-weight: 700;
             letter-spacing: -0.02em;
+            flex: 1;
+        }
+
+        .lang-switcher {
+            display: flex;
+            gap: 2px;
+            margin-left: auto;
+        }
+        .lang-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 2px 8px;
+            font-size: 12px;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .lang-btn:first-child { border-radius: 4px 0 0 4px; }
+        .lang-btn:last-child { border-radius: 0 4px 4px 0; }
+        .lang-btn.active {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .lang-btn:hover:not(.active) {
+            border-color: var(--border-hover);
+            color: var(--text);
         }
 
         /* ── Drop Zone ── */
@@ -747,14 +775,15 @@
     <div class="top-bar">
         <span class="icon">⛙</span>
         <h1>File Merger</h1>
+        <div class="lang-switcher" id="langSwitcher"></div>
     </div>
     <div class="app-body">
 
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <span>Projekty</span>
-            <button class="add-btn" id="newProjectBtn" title="Nový projekt">+</button>
+            <span data-i18n="projects">Projects</span>
+            <button class="add-btn" id="newProjectBtn" data-i18n-title="newProject" title="New project">+</button>
         </div>
         <div class="project-list" id="projectList"></div>
     </aside>
@@ -765,15 +794,15 @@
     <!-- Drop Zone (visible when no files) -->
     <div class="dropzone" id="dropzone">
         <span class="dropzone-icon">📂</span>
-        <div class="dropzone-title">Přetáhněte soubory sem</div>
-        <div class="dropzone-sub">soubory budou přidány do projektu</div>
+        <div class="dropzone-title" data-i18n="dropFilesHere">Drop files here</div>
+        <div class="dropzone-sub" data-i18n="filesWillBeAdded">files will be added to the project</div>
         <textarea id="pathCapture" class="path-capture"></textarea>
     </div>
 
     <!-- Drop Overlay (visible when dragging files over main content) -->
     <div class="main-content-drop-overlay" id="mainContentDropOverlay">
         <span class="dropzone-icon">📂</span>
-        <div class="dropzone-title">Přetáhněte soubory sem</div>
+        <div class="dropzone-title" data-i18n="dropFilesHere">Drop files here</div>
     </div>
 
     <!-- File List -->
@@ -783,9 +812,9 @@
 
     <!-- Actions -->
     <div class="actions" id="mainActions" style="display:none">
-        <button class="btn btn-primary" id="mergeBtn">⛙ Sloučit soubory</button>
+        <button class="btn btn-primary" id="mergeBtn" data-i18n="mergeFiles">⛙ Merge files</button>
         <div class="actions-right">
-            <button class="btn btn-danger" id="clearBtn">Vymazat vše</button>
+            <button class="btn btn-danger" id="clearBtn" data-i18n="clearAll">Clear all</button>
         </div>
     </div>
 
@@ -796,29 +825,29 @@
                 <input type="checkbox" id="togglePaths" checked>
                 <span class="toggle-slider"></span>
             </span>
-            Vkládat cesty k souborům
+            <span data-i18n="includeFilePaths">Include file paths</span>
         </label>
         <label class="toggle-option">
             <span class="toggle-switch">
                 <input type="checkbox" id="toggleTrimEmpty">
                 <span class="toggle-slider"></span>
             </span>
-            Oříznout prázdné řádky na začátku/konci
+            <span data-i18n="trimEmptyLines">Trim empty lines at start/end</span>
         </label>
     </div>
 
     <!-- Output -->
     <div class="output-section" id="outputSection" style="display:none">
         <div class="output-header">
-            <h2>Sloučený výstup</h2>
+            <h2 data-i18n="mergedOutput">Merged output</h2>
             <span class="output-meta" id="outputMeta"></span>
         </div>
         <div class="truncation-warning" id="truncationWarning">
-            ⚠️ <span>Zobrazení je omezeno na 20 000 řádků. Stáhněte soubor pro kompletní obsah.</span>
+            ⚠️ <span data-i18n="truncationWarning">Display is limited to 20,000 lines. Download the file for full content.</span>
         </div>
         <div class="output-actions">
-            <button class="btn btn-secondary btn-sm" id="copyBtn">📋 Kopírovat</button>
-            <button class="btn btn-secondary btn-sm" id="downloadBtn">⬇ Stáhnout</button>
+            <button class="btn btn-secondary btn-sm" id="copyBtn" data-i18n="copy">📋 Copy</button>
+            <button class="btn btn-secondary btn-sm" id="downloadBtn" data-i18n="download">⬇ Download</button>
         </div>
         <div class="output-box" id="outputBox"><div class="line-numbers" id="lineNumbers"></div><div class="output-content" id="outputContent"></div></div>
     </div>
@@ -839,6 +868,134 @@
     const DB_NAME = 'fmerge';
     const DB_VERSION = 1;
     const STORE_NAME = 'projects';
+
+    // ── i18n ──
+    const translations = {
+        en: {
+            projects: 'Projects',
+            newProject: 'New project',
+            dropFilesHere: 'Drop files here',
+            filesWillBeAdded: 'files will be added to the project',
+            mergeFiles: '⛙ Merge files',
+            clearAll: 'Clear all',
+            includeFilePaths: 'Include file paths',
+            trimEmptyLines: 'Trim empty lines at start/end',
+            mergedOutput: 'Merged output',
+            truncationWarning: 'Display is limited to 20,000 lines. Download the file for full content.',
+            copy: '📋 Copy',
+            download: '⬇ Download',
+            rename: 'Rename',
+            delete: 'Delete',
+            remove: 'Remove',
+            cancel: 'Cancel',
+            create: 'Create',
+            renameProject: 'Rename project',
+            deleteProject: 'Delete project',
+            deleteProjectConfirm: 'Are you sure you want to delete project <strong>{name}</strong>?',
+            projectRenamed: 'Project renamed: {name}',
+            cannotDeleteLast: 'Cannot delete the last project',
+            projectDeleted: 'Project deleted',
+            newProjectTitle: 'New project',
+            projectNamePlaceholder: 'Project name',
+            projectCreated: 'Project created: {name}',
+            defaultProject: 'Default project',
+            loading: '⏳ Loading…',
+            outputMeta: '{files} files · {lines} lines · {size}',
+            errorReadingFiles: 'Error reading files: {message}',
+            copiedToClipboard: 'Copied to clipboard',
+            copied: 'Copied',
+            fileDownloaded: 'File downloaded',
+            clearAllTitle: 'Clear all',
+            clearAllConfirm: 'Are you sure you want to clear all files and output?',
+            clear: 'Clear',
+            allCleared: 'All cleared',
+            updated: 'Updated: {name}',
+            lines: 'lines',
+        },
+        cs: {
+            projects: 'Projekty',
+            newProject: 'Nový projekt',
+            dropFilesHere: 'Přetáhněte soubory sem',
+            filesWillBeAdded: 'soubory budou přidány do projektu',
+            mergeFiles: '⛙ Sloučit soubory',
+            clearAll: 'Vymazat vše',
+            includeFilePaths: 'Vkládat cesty k souborům',
+            trimEmptyLines: 'Oříznout prázdné řádky na začátku/konci',
+            mergedOutput: 'Sloučený výstup',
+            truncationWarning: 'Zobrazení je omezeno na 20 000 řádků. Stáhněte soubor pro kompletní obsah.',
+            copy: '📋 Kopírovat',
+            download: '⬇ Stáhnout',
+            rename: 'Přejmenovat',
+            delete: 'Smazat',
+            remove: 'Odebrat',
+            cancel: 'Zrušit',
+            create: 'Vytvořit',
+            renameProject: 'Přejmenovat projekt',
+            deleteProject: 'Smazat projekt',
+            deleteProjectConfirm: 'Opravdu chcete smazat projekt <strong>{name}</strong>?',
+            projectRenamed: 'Projekt přejmenován: {name}',
+            cannotDeleteLast: 'Nelze smazat poslední projekt',
+            projectDeleted: 'Projekt smazán',
+            newProjectTitle: 'Nový projekt',
+            projectNamePlaceholder: 'Název projektu',
+            projectCreated: 'Projekt vytvořen: {name}',
+            defaultProject: 'Výchozí projekt',
+            loading: '⏳ Načítání…',
+            outputMeta: '{files} souborů · {lines} řádků · {size}',
+            errorReadingFiles: 'Chyba při čtení souborů: {message}',
+            copiedToClipboard: 'Zkopírováno do schránky',
+            copied: 'Zkopírováno',
+            fileDownloaded: 'Soubor stažen',
+            clearAllTitle: 'Vymazat vše',
+            clearAllConfirm: 'Opravdu chcete vymazat všechny soubory a výstup?',
+            clear: 'Vymazat',
+            allCleared: 'Vše vymazáno',
+            updated: 'Aktualizován: {name}',
+            lines: 'lines',
+        },
+    };
+
+    let currentLang = localStorage.getItem('fmerge_lang') || 'en';
+
+    function t(key, params) {
+        let str = (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+        if (params) {
+            for (const [k, v] of Object.entries(params)) {
+                str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), v);
+            }
+        }
+        return str;
+    }
+
+    function applyTranslations() {
+        document.documentElement.lang = currentLang;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            el.textContent = t(el.dataset.i18n);
+        });
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            el.title = t(el.dataset.i18nTitle);
+        });
+    }
+
+    function renderLangSwitcher() {
+        const container = document.getElementById('langSwitcher');
+        container.innerHTML = '';
+        for (const lang of Object.keys(translations)) {
+            const btn = document.createElement('button');
+            btn.className = 'lang-btn' + (lang === currentLang ? ' active' : '');
+            btn.textContent = lang.toUpperCase();
+            btn.addEventListener('click', () => {
+                if (lang === currentLang) return;
+                currentLang = lang;
+                localStorage.setItem('fmerge_lang', lang);
+                applyTranslations();
+                renderLangSwitcher();
+                renderFileList();
+                renderProjectList();
+            });
+            container.appendChild(btn);
+        }
+    }
 
     const dropzone = document.getElementById('dropzone');
     const fileListEl = document.getElementById('fileList');
@@ -873,7 +1030,7 @@
                     ${body ? `<div class="modal-body">${body}</div>` : ''}
                     ${showInput ? `<input class="modal-input" type="text" value="${escapeHtml(inputValue || '')}" placeholder="${escapeHtml(placeholder || '')}">` : ''}
                     <div class="modal-buttons">
-                        <button class="btn btn-secondary modal-cancel">Zrušit</button>
+                        <button class="btn btn-secondary modal-cancel">${escapeHtml(t('cancel'))}</button>
                         <button class="btn ${confirmClass} modal-confirm">${escapeHtml(confirmText)}</button>
                     </div>
                 </div>
@@ -992,15 +1149,15 @@
     async function renderProjectList() {
         const projects = await getAllProjects();
         projectList.innerHTML = '';
-        projects.sort((a, b) => a.name.localeCompare(b.name, 'cs'));
+        projects.sort((a, b) => a.name.localeCompare(b.name, currentLang));
         for (const p of projects) {
             const el = document.createElement('div');
             el.className = 'project-item' + (p.id === currentProjectId ? ' active' : '');
             el.innerHTML = `
                 <span class="project-name">${escapeHtml(p.name)}</span>
                 <span class="project-actions">
-                    <button class="project-action-btn rename-btn" title="Přejmenovat">✎</button>
-                    <button class="project-action-btn danger delete-btn" title="Smazat">✕</button>
+                    <button class="project-action-btn rename-btn" title="${escapeHtml(t('rename'))}">✎</button>
+                    <button class="project-action-btn danger delete-btn" title="${escapeHtml(t('delete'))}">✕</button>
                 </span>
             `;
             el.addEventListener('click', async (e) => {
@@ -1012,27 +1169,27 @@
             });
             el.querySelector('.rename-btn').addEventListener('click', async () => {
                 const name = await showModal({
-                    title: 'Přejmenovat projekt',
+                    title: t('renameProject'),
                     showInput: true,
                     inputValue: p.name,
-                    confirmText: 'Přejmenovat',
+                    confirmText: t('rename'),
                 });
                 if (!name || name === p.name) return;
                 const project = await getProject(p.id);
                 project.name = name;
                 await saveProject(project);
                 await renderProjectList();
-                toast('Projekt přejmenován: ' + name, 'success');
+                toast(t('projectRenamed', { name }), 'success');
             });
             el.querySelector('.delete-btn').addEventListener('click', async () => {
                 if (projects.length <= 1) {
-                    toast('Nelze smazat poslední projekt');
+                    toast(t('cannotDeleteLast'));
                     return;
                 }
                 const confirmed = await showModal({
-                    title: 'Smazat projekt',
-                    body: `Opravdu chcete smazat projekt <strong>${escapeHtml(p.name)}</strong>?`,
-                    confirmText: 'Smazat',
+                    title: t('deleteProject'),
+                    body: t('deleteProjectConfirm', { name: escapeHtml(p.name) }),
+                    confirmText: t('delete'),
                     confirmClass: 'btn-danger',
                 });
                 if (!confirmed) return;
@@ -1044,7 +1201,7 @@
                     await switchToProject(currentProjectId);
                 }
                 await renderProjectList();
-                toast('Projekt smazán', 'success');
+                toast(t('projectDeleted'), 'success');
             });
             projectList.appendChild(el);
         }
@@ -1096,10 +1253,10 @@
 
     newProjectBtn.addEventListener('click', async () => {
         const name = await showModal({
-            title: 'Nový projekt',
+            title: t('newProjectTitle'),
             showInput: true,
-            placeholder: 'Název projektu',
-            confirmText: 'Vytvořit',
+            placeholder: t('projectNamePlaceholder'),
+            confirmText: t('create'),
         });
         if (!name) return;
         const id = generateId();
@@ -1114,15 +1271,18 @@
         truncationWarning.classList.remove('visible');
         renderFileList();
         await renderProjectList();
-        toast('Projekt vytvořen: ' + name.trim(), 'success');
+        toast(t('projectCreated', { name: name.trim() }), 'success');
     });
 
     // ── Init ──
+    renderLangSwitcher();
+    applyTranslations();
+
     (async () => {
         const projects = await getAllProjects();
         if (projects.length === 0) {
             const id = generateId();
-            await saveProject({ id, name: 'Výchozí projekt', files: [] });
+            await saveProject({ id, name: t('defaultProject'), files: [] });
             currentProjectId = id;
             localStorage.setItem('fmerge_activeProject', id);
         } else {
@@ -1244,7 +1404,7 @@
             if (existingIndex !== -1) {
                 files[existingIndex] = { name: f.name, path, content, size: f.size };
                 updatedIndices.push(existingIndex);
-                toast('Aktualizován: ' + f.name, 'success');
+                toast(t('updated', { name: f.name }), 'success');
             } else {
                 files.push({ name: f.name, path, content, size: f.size });
             }
@@ -1307,7 +1467,7 @@
             const size = formatSize(entry.size);
 
             const lineCount = entry.content ? entry.content.split('\n').length : 0;
-            const linesText = lineCount ? lineCount.toLocaleString('cs') + ' lines' : '…';
+            const linesText = lineCount ? lineCount.toLocaleString(currentLang) + ' ' + t('lines') : '…';
 
             el.innerHTML = `
       <span class="grip">⠿</span>
@@ -1317,7 +1477,7 @@
         <div class="file-path" title="${escapeHtml(entry.path)}">${escapeHtml(entry.path)}</div>
       </div>
       <span class="file-meta">${size}<br>${linesText}</span>
-      <button class="remove-btn" title="Odebrat">✕</button>
+      <button class="remove-btn" title="${escapeHtml(t('remove'))}">✕</button>
     `;
 
             el.querySelector('.remove-btn').addEventListener('click', () => {
@@ -1415,7 +1575,7 @@
         if (!files.length) return;
 
         mergeBtn.disabled = true;
-        mergeBtn.textContent = '⏳ Načítání…';
+        mergeBtn.textContent = t('loading');
 
         try {
             let plainLinesArray = [];
@@ -1480,23 +1640,23 @@
             outputContent.innerHTML = displayLinesHtml.join('\n');
             lineNumbers.textContent = displayLinesHtml.map((_, i) => i + 1).join('\n');
 
-            outputMeta.textContent = `${totalFiles} souborů · ${totalLines.toLocaleString('cs')} řádků · ${totalSize}`;
+            outputMeta.textContent = t('outputMeta', { files: totalFiles, lines: totalLines.toLocaleString(currentLang), size: totalSize });
             outputSection.style.display = 'block';
             outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         } catch (err) {
-            toast('Chyba při čtení souborů: ' + err.message);
+            toast(t('errorReadingFiles', { message: err.message }));
         }
 
         mergeBtn.disabled = false;
-        mergeBtn.textContent = '⛙ Sloučit soubory';
+        mergeBtn.textContent = t('mergeFiles');
     });
 
     // ── Copy ──
     copyBtn.addEventListener('click', async () => {
         try {
             await navigator.clipboard.writeText(fullMergedContent);
-            toast('Zkopírováno do schránky', 'success');
+            toast(t('copiedToClipboard'), 'success');
         } catch {
             const ta = document.createElement('textarea');
             ta.value = fullMergedContent;
@@ -1504,7 +1664,7 @@
             ta.select();
             document.execCommand('copy');
             document.body.removeChild(ta);
-            toast('Zkopírováno', 'success');
+            toast(t('copied'), 'success');
         }
     });
 
@@ -1517,15 +1677,15 @@
         a.download = 'merged-files.txt';
         a.click();
         URL.revokeObjectURL(url);
-        toast('Soubor stažen', 'success');
+        toast(t('fileDownloaded'), 'success');
     });
 
     // ── Clear ──
     clearBtn.addEventListener('click', async () => {
         const confirmed = await showModal({
-            title: 'Vymazat vše',
-            body: 'Opravdu chcete vymazat všechny soubory a výstup?',
-            confirmText: 'Vymazat',
+            title: t('clearAllTitle'),
+            body: t('clearAllConfirm'),
+            confirmText: t('clear'),
             confirmClass: 'btn-danger',
         });
         if (!confirmed) return;
@@ -1537,7 +1697,7 @@
         truncationWarning.classList.remove('visible');
         renderFileList();
         scheduleSave();
-        toast('Vše vymazáno', 'success');
+        toast(t('allCleared'), 'success');
     });
 
     // ── Helpers ──

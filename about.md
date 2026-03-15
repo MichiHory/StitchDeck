@@ -21,3 +21,4 @@ Utilita pro slučování souborů. utilita umí:
 * Zobrazovat toast notifikace pro zpětnou vazbu uživateli (pozicované dole uprostřed) — úspěšné akce mají zelené pozadí s bílým textem a checkmarkem, varovné/chybové zůstávají žluté
 * Při aktualizaci již nahraného souboru zobrazit vizuální efekt — starý box se rozpadne na zelené částice (particle burst), které se rozletí do okolí, a nový box se nafoukne jako bublina (grow-in animace)
 * Modalni okna pro akce
+* Internacionalizace (i18n) — podpora více jazyků s přepínačem v horní liště, výchozí jazyk angličtina, dostupné jazyky: EN, CS. Překlad používá slovníkový systém s `t(key, params)` funkcí, statické HTML prvky mají `data-i18n` atributy, jazyková preference se ukládá do localStorage
