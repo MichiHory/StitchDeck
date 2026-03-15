@@ -9,7 +9,7 @@ import less from 'highlight.js/lib/languages/less';
 import json from 'highlight.js/lib/languages/json';
 import javascript from 'highlight.js/lib/languages/javascript';
 import blade from 'highlight.js/lib/languages/php-template';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import type { PDFDocument as PDFDocumentType } from 'pdf-lib';
 
 import { state, MAX_DISPLAY_LINES } from './state';
 import { escapeHtml, formatSize, getLanguage } from './helpers';
@@ -215,6 +215,7 @@ export function initMerge(): void {
         downloadPdfBtn.textContent = t('loading');
 
         try {
+            const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
             const mergedPdf = await PDFDocument.create();
             const includePaths = togglePaths.checked;
             const trimEmpty = toggleTrimEmpty.checked;
