@@ -1,3 +1,5 @@
+import { estimateTokenCount } from 'tokenx';
+
 export function escapeHtml(str: string): string {
     const d = document.createElement('div');
     d.textContent = str;
@@ -8,6 +10,17 @@ export function formatSize(bytes: number): string {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+export function countTokens(text: string): number {
+    if (!text) return 0;
+    return estimateTokenCount(text);
+}
+
+export function formatTokens(count: number): string {
+    if (count < 1000) return String(count);
+    if (count < 1_000_000) return (count / 1000).toFixed(1) + 'k';
+    return (count / 1_000_000).toFixed(1) + 'M';
 }
 
 export function cleanPath(rawPath: string): string {

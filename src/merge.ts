@@ -11,7 +11,7 @@ import javascript from 'highlight.js/lib/languages/javascript';
 import blade from 'highlight.js/lib/languages/php-template';
 
 import { state, MAX_DISPLAY_LINES } from './state';
-import { escapeHtml, formatSize, getLanguage } from './helpers';
+import { escapeHtml, formatSize, countTokens, formatTokens, getLanguage } from './helpers';
 import { t } from './i18n';
 import { toast } from './toast';
 import { showModal } from './modal';
@@ -113,6 +113,7 @@ export function initMerge(): void {
             const totalLines = plainLinesArray.length;
             const totalFiles = state.files.length;
             const totalSize = formatSize(new Blob([state.fullMergedContent]).size);
+            const totalTokens = formatTokens(countTokens(state.fullMergedContent));
 
             let displayLinesHtml: string[];
 
@@ -127,7 +128,7 @@ export function initMerge(): void {
             outputContent.innerHTML = displayLinesHtml.join('\n');
             lineNumbers.textContent = displayLinesHtml.map((_, i) => String(i + 1)).join('\n');
 
-            outputMeta.textContent = t('outputMeta', { files: totalFiles, lines: totalLines.toLocaleString(), size: totalSize });
+            outputMeta.textContent = t('outputMeta', { files: totalFiles, lines: totalLines.toLocaleString(), size: totalSize, tokens: totalTokens });
             outputSection.style.display = 'block';
             outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
