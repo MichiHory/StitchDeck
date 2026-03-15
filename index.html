@@ -578,6 +578,66 @@
             margin-top: 1.25rem;
         }
 
+        /* ── Toggle Options ── */
+        .merge-options {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .toggle-option {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            font-size: .82rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle-option:hover {
+            color: var(--text);
+        }
+        .toggle-switch {
+            position: relative;
+            width: 36px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            transition: all .2s;
+            cursor: pointer;
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            left: 2px;
+            top: 2px;
+            background: var(--text-dim);
+            border-radius: 50%;
+            transition: all .2s;
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+        }
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(16px);
+            background: var(--accent);
+        }
+
         /* ── Empty State ── */
         .empty-state {
             text-align: center;
@@ -641,6 +701,24 @@
         </div>
     </div>
 
+    <!-- Merge Options -->
+    <div class="merge-options" id="mergeOptions" style="display:none">
+        <label class="toggle-option">
+            <span class="toggle-switch">
+                <input type="checkbox" id="togglePaths" checked>
+                <span class="toggle-slider"></span>
+            </span>
+            Vkládat cesty k souborům
+        </label>
+        <label class="toggle-option">
+            <span class="toggle-switch">
+                <input type="checkbox" id="toggleTrimEmpty">
+                <span class="toggle-slider"></span>
+            </span>
+            Oříznout prázdné řádky na začátku/konci
+        </label>
+    </div>
+
     <!-- Output -->
     <div class="output-section" id="outputSection" style="display:none">
         <div class="output-header">
@@ -689,6 +767,9 @@
     const toastEl = document.getElementById('toast');
     const projectList = document.getElementById('projectList');
     const newProjectBtn = document.getElementById('newProjectBtn');
+    const mergeOptions = document.getElementById('mergeOptions');
+    const togglePaths = document.getElementById('togglePaths');
+    const toggleTrimEmpty = document.getElementById('toggleTrimEmpty');
 
     // ── Modal ──
     function showModal({ title, body, inputValue, placeholder, confirmText = 'OK', confirmClass = 'btn-primary', showInput = false }) {
@@ -1040,9 +1121,16 @@
         return p.trim();
     }
 
+    // ── Toggle persistence ──
+    togglePaths.checked = localStorage.getItem('fmerge_togglePaths') !== 'false';
+    toggleTrimEmpty.checked = localStorage.getItem('fmerge_toggleTrimEmpty') === 'true';
+    togglePaths.addEventListener('change', () => localStorage.setItem('fmerge_togglePaths', togglePaths.checked));
+    toggleTrimEmpty.addEventListener('change', () => localStorage.setItem('fmerge_toggleTrimEmpty', toggleTrimEmpty.checked));
+
     function renderFileList() {
         fileListEl.innerHTML = '';
         mainActions.style.display = files.length ? 'flex' : 'none';
+        mergeOptions.style.display = files.length ? 'flex' : 'none';
         const currentGen = ++renderGeneration;
 
         files.forEach((entry, i) => {
@@ -1168,19 +1256,30 @@
             let plainLinesArray = [];
             let htmlLinesArray = [];
 
+            const includePaths = togglePaths.checked;
+            const trimEmpty = toggleTrimEmpty.checked;
+
             for (let i = 0; i < files.length; i++) {
                 const entry = files[i];
-                const contentStr = entry.content || '';
+                let contentStr = entry.content || '';
                 const lang = getLanguage(entry.path);
 
+                if (trimEmpty) {
+                    contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
+                }
+
                 // Plain-text logika (pro schránku a soubor)
-                plainLinesArray.push(`${entry.path}:`);
+                if (includePaths) {
+                    plainLinesArray.push(`${entry.path}:`);
+                }
                 const plainContentLines = contentStr.split('\n');
                 plainLinesArray.push(...plainContentLines);
 
                 // HTML logika (pro viditelný výstup se syntax highlightingem)
-                const pathLineHtml = `<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`;
-                htmlLinesArray.push(pathLineHtml);
+                if (includePaths) {
+                    const pathLineHtml = `<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`;
+                    htmlLinesArray.push(pathLineHtml);
+                }
 
                 let highlightedContent = '';
                 if (lang !== 'plaintext' && window.hljs && hljs.getLanguage(lang)) {
