@@ -40,9 +40,118 @@
         }
 
         .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 1.25rem 0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 0 1rem .75rem;
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sidebar-header .add-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: background .15s;
+        }
+        .sidebar-header .add-btn:hover {
+            background: var(--accent-dim);
+        }
+        .project-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 0 .5rem;
+        }
+        .project-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .5rem .65rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: .85rem;
+            font-weight: 500;
+            transition: all .15s;
+            border: 1px solid transparent;
+            color: var(--text-dim);
+            user-select: none;
+        }
+        .project-item:hover {
+            background: var(--surface-2);
+            color: var(--text);
+        }
+        .project-item.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .project-item .project-name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .project-item .project-actions {
+            display: none;
+            gap: .25rem;
+            flex-shrink: 0;
+        }
+        .project-item:hover .project-actions,
+        .project-item.active .project-actions {
+            display: flex;
+        }
+        .project-item .project-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: .75rem;
+            line-height: 1;
+            transition: all .15s;
+        }
+        .project-item .project-action-btn:hover {
+            color: var(--text);
+            background: var(--surface);
+        }
+        .project-item .project-action-btn.danger:hover {
+            color: var(--danger);
+            background: var(--danger-dim);
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 2.5rem 1.5rem 4rem;
+            padding: 2.5rem 2rem 4rem;
         }
 
         /* ── Header ── */
@@ -398,96 +507,40 @@
             font-size: .9rem;
         }
 
-        /* ── Project Bar ── */
-        .project-bar {
-            display: flex;
-            align-items: center;
-            gap: .5rem;
-            margin-bottom: 1.5rem;
-            padding: .6rem .8rem;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-        }
-        .project-bar .label {
-            color: var(--text-dim);
-            font-size: .8rem;
-            font-weight: 500;
-            flex-shrink: 0;
-        }
-        .project-select {
-            flex: 1;
-            min-width: 0;
-            background: var(--surface-2);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: .4rem .6rem;
-            font-family: 'Outfit', sans-serif;
-            font-size: .85rem;
-            cursor: pointer;
-            appearance: none;
-            -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237d7f8c' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right .6rem center;
-            padding-right: 1.8rem;
-        }
-        .project-select:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-        .project-btn {
-            background: none;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            cursor: pointer;
-            padding: .35rem .6rem;
-            border-radius: var(--radius-sm);
-            font-size: .8rem;
-            font-family: 'Outfit', sans-serif;
-            transition: all .15s;
-            white-space: nowrap;
-            display: inline-flex;
-            align-items: center;
-            gap: .3rem;
-        }
-        .project-btn:hover {
-            border-color: var(--border-hover);
-            color: var(--text);
-            background: var(--surface-2);
-        }
-        .project-btn.danger:hover {
-            border-color: var(--danger);
-            color: var(--danger);
-            background: var(--danger-dim);
-        }
 
-        @media (max-width: 600px) {
-            .app { padding: 1.5rem 1rem 3rem; }
+        @media (max-width: 768px) {
+            .app { flex-direction: column; }
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                max-height: 200px;
+            }
+            .main-content { padding: 1.5rem 1rem 3rem; }
             .actions { flex-direction: column; }
             .actions-right { margin-left: 0; }
             .output-actions { flex-wrap: wrap; }
-            .project-bar { flex-wrap: wrap; }
         }
     </style>
 </head>
 <body>
 
 <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span>Projekty</span>
+            <button class="add-btn" id="newProjectBtn" title="Nový projekt">+</button>
+        </div>
+        <div class="project-list" id="projectList"></div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
     <header class="header">
         <h1><span class="icon">⊕</span> File Merger</h1>
         <p>Přetáhněte soubory, sloučte a zkopírujte nebo stáhněte výsledek</p>
     </header>
-
-    <!-- Project Bar -->
-    <div class="project-bar">
-        <span class="label">Projekt:</span>
-        <select class="project-select" id="projectSelect"></select>
-        <button class="project-btn" id="newProjectBtn">+ Nový</button>
-        <button class="project-btn" id="renameProjectBtn">✎ Přejmenovat</button>
-        <button class="project-btn danger" id="deleteProjectBtn">✕ Smazat</button>
-    </div>
 
     <!-- Drop Zone -->
     <div class="dropzone" id="dropzone">
@@ -523,6 +576,7 @@
         </div>
         <div class="output-box" id="outputBox"><div class="line-numbers" id="lineNumbers"></div><div class="output-content" id="outputContent"></div></div>
     </div>
+    </div><!-- /main-content -->
 </div>
 
 <div class="toast" id="toast"></div>
@@ -552,10 +606,8 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const truncationWarning = document.getElementById('truncationWarning');
     const toastEl = document.getElementById('toast');
-    const projectSelect = document.getElementById('projectSelect');
+    const projectList = document.getElementById('projectList');
     const newProjectBtn = document.getElementById('newProjectBtn');
-    const renameProjectBtn = document.getElementById('renameProjectBtn');
-    const deleteProjectBtn = document.getElementById('deleteProjectBtn');
 
     let files = []; // { name, path, content, size }
     let fullMergedContent = '';
@@ -629,16 +681,53 @@
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     }
 
-    async function renderProjectSelect() {
+    async function renderProjectList() {
         const projects = await getAllProjects();
-        projectSelect.innerHTML = '';
+        projectList.innerHTML = '';
         projects.sort((a, b) => a.name.localeCompare(b.name, 'cs'));
         for (const p of projects) {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.name;
-            if (p.id === currentProjectId) opt.selected = true;
-            projectSelect.appendChild(opt);
+            const el = document.createElement('div');
+            el.className = 'project-item' + (p.id === currentProjectId ? ' active' : '');
+            el.innerHTML = `
+                <span class="project-name">${escapeHtml(p.name)}</span>
+                <span class="project-actions">
+                    <button class="project-action-btn rename-btn" title="Přejmenovat">✎</button>
+                    <button class="project-action-btn danger delete-btn" title="Smazat">✕</button>
+                </span>
+            `;
+            el.addEventListener('click', async (e) => {
+                if (e.target.closest('.project-action-btn')) return;
+                if (p.id === currentProjectId) return;
+                await persistCurrentProject();
+                await switchToProject(p.id);
+                await renderProjectList();
+            });
+            el.querySelector('.rename-btn').addEventListener('click', async () => {
+                const name = prompt('Nový název projektu:', p.name);
+                if (!name || !name.trim() || name.trim() === p.name) return;
+                const project = await getProject(p.id);
+                project.name = name.trim();
+                await saveProject(project);
+                await renderProjectList();
+                toast('Projekt přejmenován: ' + name.trim());
+            });
+            el.querySelector('.delete-btn').addEventListener('click', async () => {
+                if (projects.length <= 1) {
+                    toast('Nelze smazat poslední projekt');
+                    return;
+                }
+                if (!confirm('Smazat projekt "' + p.name + '"?')) return;
+                await deleteProject(p.id);
+                if (p.id === currentProjectId) {
+                    const remaining = await getAllProjects();
+                    currentProjectId = remaining[0].id;
+                    localStorage.setItem('fmerge_activeProject', currentProjectId);
+                    await switchToProject(currentProjectId);
+                }
+                await renderProjectList();
+                toast('Projekt smazán');
+            });
+            projectList.appendChild(el);
         }
     }
 
@@ -686,11 +775,6 @@
         await saveProject(project);
     }
 
-    projectSelect.addEventListener('change', async () => {
-        await switchToProject(projectSelect.value);
-        await renderProjectSelect();
-    });
-
     newProjectBtn.addEventListener('click', async () => {
         const name = prompt('Název nového projektu:');
         if (!name || !name.trim()) return;
@@ -705,38 +789,8 @@
         outputSection.style.display = 'none';
         truncationWarning.classList.remove('visible');
         renderFileList();
-        await renderProjectSelect();
+        await renderProjectList();
         toast('Projekt vytvořen: ' + name.trim());
-    });
-
-    renameProjectBtn.addEventListener('click', async () => {
-        if (!currentProjectId) return;
-        const project = await getProject(currentProjectId);
-        if (!project) return;
-        const name = prompt('Nový název projektu:', project.name);
-        if (!name || !name.trim() || name.trim() === project.name) return;
-        project.name = name.trim();
-        await saveProject(project);
-        await renderProjectSelect();
-        toast('Projekt přejmenován: ' + name.trim());
-    });
-
-    deleteProjectBtn.addEventListener('click', async () => {
-        if (!currentProjectId) return;
-        const projects = await getAllProjects();
-        if (projects.length <= 1) {
-            toast('Nelze smazat poslední projekt');
-            return;
-        }
-        const project = await getProject(currentProjectId);
-        if (!confirm('Smazat projekt "' + project.name + '"?')) return;
-        await deleteProject(currentProjectId);
-        const remaining = await getAllProjects();
-        currentProjectId = remaining[0].id;
-        localStorage.setItem('fmerge_activeProject', currentProjectId);
-        await switchToProject(currentProjectId);
-        await renderProjectSelect();
-        toast('Projekt smazán');
     });
 
     // ── Init ──
@@ -753,7 +807,7 @@
             currentProjectId = exists ? savedId : projects[0].id;
             localStorage.setItem('fmerge_activeProject', currentProjectId);
         }
-        await renderProjectSelect();
+        await renderProjectList();
         await switchToProject(currentProjectId);
     })();
 
