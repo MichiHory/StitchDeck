@@ -1257,7 +1257,14 @@
     });
 
     // ── Clear ──
-    clearBtn.addEventListener('click', () => {
+    clearBtn.addEventListener('click', async () => {
+        const confirmed = await showModal({
+            title: 'Vymazat vše',
+            body: 'Opravdu chcete vymazat všechny soubory a výstup?',
+            confirmText: 'Vymazat',
+            confirmClass: 'btn-danger',
+        });
+        if (!confirmed) return;
         files = [];
         fullMergedContent = '';
         outputContent.innerHTML = '';
