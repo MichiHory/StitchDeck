@@ -3,7 +3,7 @@ import { escapeHtml, formatSize, getExtColor } from './helpers';
 import { t, getCurrentLang } from './i18n';
 import {
     fileListEl, mainActions, mergeOptions, downloadPdfBtn,
-    dropzone, fileListWrapper,
+    dropzone, fileListWrapper, togglePdfToTextLabel,
 } from './dom';
 import { scheduleSave } from './projects';
 
@@ -13,6 +13,7 @@ export function renderFileList(): void {
     mergeOptions.style.display = state.files.length ? 'flex' : 'none';
     const hasPdf = state.files.some(f => f.name.toLowerCase().endsWith('.pdf'));
     downloadPdfBtn.style.display = hasPdf ? '' : 'none';
+    togglePdfToTextLabel.style.display = hasPdf ? '' : 'none';
 
     if (state.files.length) {
         dropzone.classList.add('hidden');

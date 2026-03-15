@@ -21,5 +21,7 @@ export const mergeOptions = document.getElementById('mergeOptions')!;
 export const togglePaths = document.getElementById('togglePaths')! as HTMLInputElement;
 export const toggleTrimEmpty = document.getElementById('toggleTrimEmpty')! as HTMLInputElement;
 export const downloadPdfBtn = document.getElementById('downloadPdfBtn')! as HTMLButtonElement;
+export const togglePdfToText = document.getElementById('togglePdfToText')! as HTMLInputElement;
+export const togglePdfToTextLabel = document.getElementById('togglePdfToTextLabel')!;
 export const pathCapture = document.getElementById('pathCapture')! as HTMLTextAreaElement;
 export const langSwitcher = document.getElementById('langSwitcher')!;

@@ -21,7 +21,7 @@ import { base64ToUint8Array } from './pdf';
 import {
     mergeBtn, clearBtn, copyBtn, downloadBtn, downloadPdfBtn,
     outputSection, outputContent, lineNumbers, outputMeta,
-    truncationWarning, togglePaths, toggleTrimEmpty,
+    truncationWarning, togglePaths, toggleTrimEmpty, togglePdfToText,
 } from './dom';
 
 // Register highlight.js languages
@@ -40,8 +40,10 @@ export function initMerge(): void {
     // Toggle persistence
     togglePaths.checked = localStorage.getItem('fmerge_togglePaths') !== 'false';
     toggleTrimEmpty.checked = localStorage.getItem('fmerge_toggleTrimEmpty') === 'true';
+    togglePdfToText.checked = localStorage.getItem('fmerge_togglePdfToText') !== 'false';
     togglePaths.addEventListener('change', () => localStorage.setItem('fmerge_togglePaths', String(togglePaths.checked)));
     toggleTrimEmpty.addEventListener('change', () => localStorage.setItem('fmerge_toggleTrimEmpty', String(toggleTrimEmpty.checked)));
+    togglePdfToText.addEventListener('change', () => localStorage.setItem('fmerge_togglePdfToText', String(togglePdfToText.checked)));
 
     // Merge
     mergeBtn.addEventListener('click', async () => {
@@ -56,18 +58,34 @@ export function initMerge(): void {
 
             const includePaths = togglePaths.checked;
             const trimEmpty = toggleTrimEmpty.checked;
+            const pdfToText = togglePdfToText.checked;
 
             for (let i = 0; i < state.files.length; i++) {
                 const entry = state.files[i];
 
                 if (entry.pdfData) {
-                    if (includePaths) {
-                        plainLinesArray.push(`${entry.path}:`);
-                        htmlLinesArray.push(`<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
+                    if (pdfToText) {
+                        const extractedText = await extractPdfText(entry.pdfData);
+                        let contentStr = extractedText;
+                        if (trimEmpty) {
+                            contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
+                        }
+                        if (includePaths) {
+                            plainLinesArray.push(`${entry.path}:`);
+                            htmlLinesArray.push(`<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
+                        }
+                        const lines = contentStr.split('\n');
+                        plainLinesArray.push(...lines);
+                        htmlLinesArray.push(...lines.map(l => escapeHtml(l)));
+                    } else {
+                        if (includePaths) {
+                            plainLinesArray.push(`${entry.path}:`);
+                            htmlLinesArray.push(`<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
+                        }
+                        const placeholder = `[PDF \u2013 ${t('pdfBinaryContent')}]`;
+                        plainLinesArray.push(placeholder);
+                        htmlLinesArray.push(`<span style="color: var(--text-dim); font-style: italic;">${escapeHtml(placeholder)}</span>`);
                     }
-                    const placeholder = `[PDF \u2013 ${t('pdfBinaryContent')}]`;
-                    plainLinesArray.push(placeholder);
-                    htmlLinesArray.push(`<span style="color: var(--text-dim); font-style: italic;">${escapeHtml(placeholder)}</span>`);
                     if (i < state.files.length - 1) {
                         plainLinesArray.push('');
                         htmlLinesArray.push('');
@@ -327,4 +345,125 @@ export function initMerge(): void {
         scheduleSave();
         toast(t('allCleared'), 'success');
     });
+}
+
+let pdfWorkerBlobUrl: string | null = null;
+
+interface PdfTextItem {
+    str: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    fontName: string;
+}
+
+function extractItemsFromContent(content: { items: Record<string, unknown>[] }): PdfTextItem[] {
+    const items: PdfTextItem[] = [];
+    for (const item of content.items) {
+        if (!('str' in item)) continue;
+        const ti = item as unknown as { str: string; transform: number[]; width: number; height: number; fontName: string };
+        if (!ti.str) continue;
+        items.push({
+            str: ti.str,
+            x: ti.transform[4],
+            y: ti.transform[5],
+            width: ti.width,
+            height: ti.height || Math.abs(ti.transform[3]) || 12,
+            fontName: ti.fontName || '',
+        });
+    }
+    return items;
+}
+
+function groupIntoLines(items: PdfTextItem[]): PdfTextItem[][] {
+    if (!items.length) return [];
+
+    // Sort by Y descending (top to bottom), then X ascending (left to right)
+    items.sort((a, b) => b.y - a.y || a.x - b.x);
+
+    // Group items into lines based on Y proximity
+    const lines: PdfTextItem[][] = [];
+    let currentLine: PdfTextItem[] = [items[0]];
+    let currentY = items[0].y;
+
+    for (let i = 1; i < items.length; i++) {
+        const item = items[i];
+        // Use font height as threshold for same-line detection
+        const threshold = Math.max(item.height * 0.4, 2);
+        if (Math.abs(item.y - currentY) <= threshold) {
+            currentLine.push(item);
+        } else {
+            currentLine.sort((a, b) => a.x - b.x);
+            lines.push(currentLine);
+            currentLine = [item];
+            currentY = item.y;
+        }
+    }
+    currentLine.sort((a, b) => a.x - b.x);
+    lines.push(currentLine);
+
+    return lines;
+}
+
+function buildLineText(items: PdfTextItem[]): string {
+    if (!items.length) return '';
+
+    let result = items[0].str;
+
+    for (let i = 1; i < items.length; i++) {
+        const prev = items[i - 1];
+        const curr = items[i];
+
+        // Calculate gap between end of previous item and start of current
+        const prevEnd = prev.x + prev.width;
+        const gap = curr.x - prevEnd;
+
+        // Estimate average character width from previous item
+        const avgCharWidth = prev.str.length > 0 ? prev.width / prev.str.length : prev.height * 0.5;
+        const spaceThreshold = avgCharWidth * 0.3;
+
+        if (gap > spaceThreshold) {
+            // Large gap = likely a tab/column separator
+            if (gap > avgCharWidth * 4) {
+                result += '\t';
+            } else {
+                result += ' ';
+            }
+        }
+
+        result += curr.str;
+    }
+
+    return result;
+}
+
+async function extractPdfText(pdfBase64: string): Promise<string> {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (!pdfWorkerBlobUrl) {
+        const workerCode = (await import('pdfjs-dist/build/pdf.worker.min.mjs?raw')).default;
+        pdfWorkerBlobUrl = URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' }));
+    }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerBlobUrl;
+
+    const pdfBytes = base64ToUint8Array(pdfBase64);
+    const doc = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+    const pages: string[] = [];
+
+    for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        const items = extractItemsFromContent(content);
+        const lines = groupIntoLines(items);
+        const lineTexts: string[] = [];
+
+        for (const lineItems of lines) {
+            const text = buildLineText(lineItems);
+            if (text) lineTexts.push(text);
+        }
+
+        pages.push(lineTexts.join('\n'));
+    }
+
+    return pages.join('\n\n');
 }

@@ -16,7 +16,8 @@ Utilita pro slučování souborů. utilita umí:
 * Zobrazit sloučený výstup se syntax highlightingem podle typu souboru (HTML, XML/SVG, JS, TS, TSX/JSX, PHP, JSON, YAML/YML, NEON, Latte, Blade, CSS/SCSS/LESS) — jazyk se detekuje z přípony v hlavičce každé sekce, názvy souborů jsou zvýrazněny neonově zeleně, highlighting je čistě vizuální a není součástí kopírovaného ani staženého textu
 * Zkopírovat sloučený obsah do schránky (bez čísel řádků a bez syntax highlightingu) — používá nativní Clipboard API (`navigator.clipboard.writeText`), pokud kopírování selže, zobrazí se upozornění
 * Stáhnout sloučený obsah s možností zvolit název souboru a formát (txt, md, json, xml, csv, html, log) — výchozí název `merged-files`, výchozí formát `.txt`, výběr přes modální dialog
-* Slučování PDF souborů — automatická detekce PDF souborů v seznamu, tlačítko „Download PDF" se zobrazí jakmile je v seznamu alespoň jeden PDF soubor. Pokud jsou všechny soubory PDF, sloučí se do jednoho PDF. Pokud jsou v seznamu i textové soubory, jejich obsah se převede na PDF stránky (Courier, A4, automatické zalamování řádků) a vloží do výsledného PDF. PDF soubory se v textovém výstupu zobrazují jako placeholder `[PDF – binární obsah]`. Používá knihovnu pdf-lib.
+* Slučování PDF souborů — automatická detekce PDF souborů v seznamu, tlačítko „Download PDF" se zobrazí jakmile je v seznamu alespoň jeden PDF soubor. Pokud jsou všechny soubory PDF, sloučí se do jednoho PDF. Pokud jsou v seznamu i textové soubory, jejich obsah se převede na PDF stránky (Courier, A4, automatické zalamování řádků) a vloží do výsledného PDF. Používá knihovnu pdf-lib.
+* Přepínač „Převést PDF dokumenty na text" — zobrazí se jen pokud je v seznamu alespoň jeden PDF soubor, defaultně zapnutý. Když je aktivní, z PDF souborů se extrahuje text (pomocí pdfjs-dist) a vloží do merged výstupu místo placeholderu `[PDF – binární obsah]`. Když je vypnutý, zobrazí se původní placeholder. Preference se ukládá do localStorage. Extrakce textu řadí textové prvky podle vizuální pozice (Y shora dolů, X zleva doprava), seskupuje je do řádků na základě výšky fontu a vkládá mezery/tabulátory podle horizontálních vzdáleností mezi prvky.
 * Vymazat vše (soubory i výstup) jedním tlačítkem — s potvrzovacím dialogem
 * Zobrazovat metadata výstupu (počet souborů, řádků, velikost, odhadovaný počet tokenů pro LLM)
 * Zobrazovat toast notifikace pro zpětnou vazbu uživateli (pozicované dole uprostřed) — úspěšné akce mají zelené pozadí s bílým textem a checkmarkem, varovné/chybové zůstávají žluté
@@ -27,7 +28,7 @@ Utilita pro slučování souborů. utilita umí:
 ## Technický stack
 
 * **Build**: Vite 8 (Rolldown) + TypeScript
-* **Závislosti**: highlight.js (syntax highlighting), pdf-lib (PDF operace)
+* **Závislosti**: highlight.js (syntax highlighting), pdf-lib (PDF operace), pdfjs-dist (extrakce textu z PDF)
 * **Struktura projektu**:
   - `index.html` — HTML šablona
   - `src/main.ts` — vstupní bod, inicializace
