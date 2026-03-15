@@ -198,34 +198,22 @@
         }
 
         /* ── Drop Zone ── */
-        .dropzone-panel {
-            width: 320px;
-            flex-shrink: 0;
-            position: sticky;
-            top: 0;
-            align-self: flex-start;
-            height: 100vh;
-            background: var(--surface);
-            border-right: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            order: 0;
-            overflow: hidden;
-        }
         .dropzone {
             border: 2px dashed var(--border);
-            border-radius: 0;
-            padding: 2rem 1.25rem;
+            border-radius: var(--radius);
+            padding: 3rem 1.25rem;
             text-align: center;
             transition: all .25s ease;
-            position: absolute;
-            inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             background: var(--surface);
+            position: relative;
+            min-height: 260px;
+        }
+        .dropzone.hidden {
+            display: none;
         }
         .dropzone:hover, .dropzone.dragover {
             border-color: var(--accent);
@@ -256,6 +244,35 @@
             opacity: 0;
             resize: none;
             z-index: 1;
+        }
+
+        /* ── File List Drop Overlay ── */
+        .file-list-wrapper {
+            position: relative;
+        }
+        .file-list-drop-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            border: 2px dashed var(--accent);
+            border-radius: var(--radius);
+            background: var(--accent-dim);
+            box-shadow: 0 0 40px var(--accent-glow);
+            z-index: 10;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            pointer-events: none;
+        }
+        .file-list-wrapper.drag-active .file-list-drop-overlay {
+            display: flex;
+        }
+        .file-list-drop-overlay .dropzone-icon {
+            font-size: 2rem;
+            margin-bottom: .5rem;
+        }
+        .file-list-drop-overlay .dropzone-title {
+            font-size: .95rem;
         }
 
         /* ── File List ── */
@@ -706,13 +723,6 @@
 
         @media (max-width: 768px) {
             .app-body { flex-direction: column; }
-            .dropzone-panel {
-                width: 100%;
-                border-right: none;
-                border-bottom: 1px solid var(--border);
-                order: -2;
-                padding: .5rem;
-            }
             .sidebar {
                 width: 100%;
                 border-left: none;
@@ -736,15 +746,6 @@
         <h1>File Merger</h1>
     </div>
     <div class="app-body">
-    <!-- Drop Zone Panel -->
-    <div class="dropzone-panel">
-        <div class="dropzone" id="dropzone">
-            <span class="dropzone-icon">📂</span>
-            <div class="dropzone-title">Přetáhněte soubory sem</div>
-            <div class="dropzone-sub">soubory budou přidány do seznamu níže</div>
-            <textarea id="pathCapture" class="path-capture"></textarea>
-        </div>
-    </div>
 
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -758,8 +759,22 @@
     <!-- Main Content -->
     <div class="main-content">
 
+    <!-- Drop Zone (visible when no files) -->
+    <div class="dropzone" id="dropzone">
+        <span class="dropzone-icon">📂</span>
+        <div class="dropzone-title">Přetáhněte soubory sem</div>
+        <div class="dropzone-sub">soubory budou přidány do projektu</div>
+        <textarea id="pathCapture" class="path-capture"></textarea>
+    </div>
+
     <!-- File List -->
-    <div class="file-list" id="fileList"></div>
+    <div class="file-list-wrapper" id="fileListWrapper">
+        <div class="file-list-drop-overlay">
+            <span class="dropzone-icon">📂</span>
+            <div class="dropzone-title">Přetáhněte soubory sem</div>
+        </div>
+        <div class="file-list" id="fileList"></div>
+    </div>
 
     <!-- Actions -->
     <div class="actions" id="mainActions" style="display:none">
@@ -822,6 +837,7 @@
 
     const dropzone = document.getElementById('dropzone');
     const fileListEl = document.getElementById('fileList');
+    const fileListWrapper = document.getElementById('fileListWrapper');
     const mainActions = document.getElementById('mainActions');
     const mergeBtn = document.getElementById('mergeBtn');
     const clearBtn = document.getElementById('clearBtn');
@@ -1113,21 +1129,14 @@
     })();
 
     // ── Drag & Drop Zone ──
-    dropzone.addEventListener('dragover', e => {
-        e.preventDefault();
-        dropzone.classList.add('dragover');
-    });
-    dropzone.addEventListener('dragleave', e => {
-        if (!dropzone.contains(e.relatedTarget)) {
-            dropzone.classList.remove('dragover');
-        }
-    });
-    dropzone.addEventListener('drop', e => {
+    function handleDrop(e) {
         e.preventDefault();
         dropzone.classList.remove('dragover');
+        fileListWrapper.classList.remove('drag-active');
 
         const dt = e.dataTransfer;
         const droppedFiles = dt.files;
+        if (!droppedFiles.length) return;
 
         const textData = dt.getData('text') || dt.getData('text/uri-list') || '';
         const pathLines = textData.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -1138,6 +1147,43 @@
         const capturedPaths = pathLines.length >= droppedFiles.length ? pathLines : textareaLines;
 
         handleFilesWithPaths(droppedFiles, capturedPaths);
+    }
+
+    dropzone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', e => {
+        if (!dropzone.contains(e.relatedTarget)) {
+            dropzone.classList.remove('dragover');
+        }
+    });
+    dropzone.addEventListener('drop', handleDrop);
+
+    // File list wrapper as drop target (when files already exist)
+    let wrapperDragCounter = 0;
+    fileListWrapper.addEventListener('dragenter', e => {
+        if (dragSrcIndex !== null) return;
+        e.preventDefault();
+        wrapperDragCounter++;
+        fileListWrapper.classList.add('drag-active');
+    });
+    fileListWrapper.addEventListener('dragover', e => {
+        if (dragSrcIndex !== null) return;
+        e.preventDefault();
+    });
+    fileListWrapper.addEventListener('dragleave', () => {
+        if (dragSrcIndex !== null) return;
+        wrapperDragCounter--;
+        if (wrapperDragCounter <= 0) {
+            wrapperDragCounter = 0;
+            fileListWrapper.classList.remove('drag-active');
+        }
+    });
+    fileListWrapper.addEventListener('drop', e => {
+        wrapperDragCounter = 0;
+        if (dragSrcIndex !== null) return; // let reorder handle it
+        handleDrop(e);
     });
 
     pathCapture.addEventListener('drop', e => {
@@ -1215,6 +1261,15 @@
         fileListEl.innerHTML = '';
         mainActions.style.display = files.length ? 'flex' : 'none';
         mergeOptions.style.display = files.length ? 'flex' : 'none';
+
+        // Toggle dropzone vs file list visibility
+        if (files.length) {
+            dropzone.classList.add('hidden');
+            fileListWrapper.style.display = '';
+        } else {
+            dropzone.classList.remove('hidden');
+            fileListWrapper.style.display = 'none';
+        }
         const currentGen = ++renderGeneration;
 
         files.forEach((entry, i) => {
@@ -1260,24 +1315,27 @@
                 document.querySelectorAll('.drag-over-item').forEach(x => x.classList.remove('drag-over-item'));
             });
             el.addEventListener('dragover', e => {
-                e.preventDefault();
-                if (dragSrcIndex !== null && dragSrcIndex !== i) {
-                    el.classList.add('drag-over-item');
+                if (dragSrcIndex !== null) {
+                    e.preventDefault();
+                    if (dragSrcIndex !== i) {
+                        el.classList.add('drag-over-item');
+                    }
                 }
             });
             el.addEventListener('dragleave', () => {
                 el.classList.remove('drag-over-item');
             });
             el.addEventListener('drop', e => {
-                e.preventDefault();
-                e.stopPropagation();
                 el.classList.remove('drag-over-item');
                 if (dragSrcIndex !== null && dragSrcIndex !== i) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const moved = files.splice(dragSrcIndex, 1)[0];
                     files.splice(i, 0, moved);
                     renderFileList();
                     scheduleSave();
                 }
+                // External file drops bubble up to fileListWrapper
             });
 
             fileListEl.appendChild(el);
