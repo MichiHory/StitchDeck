@@ -43,6 +43,8 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            max-width: 1920px;
+            margin: 0 auto;
         }
         .app-body {
             display: flex;
@@ -55,11 +57,12 @@
             width: 260px;
             flex-shrink: 0;
             background: var(--surface);
-            border-right: 1px solid var(--border);
+            border-left: 1px solid var(--border);
             padding: 0;
             display: flex;
             flex-direction: column;
             overflow-y: auto;
+            order: 2;
         }
         .sidebar-header {
             padding: .85rem 1rem;
@@ -164,9 +167,9 @@
         .main-content {
             flex: 1;
             min-width: 0;
-            max-width: 1200px;
             padding: 1.5rem 2rem 4rem;
             overflow-y: auto;
+            order: 1;
         }
 
         /* ── Top Bar ── */
@@ -195,13 +198,33 @@
         }
 
         /* ── Drop Zone ── */
+        .dropzone-panel {
+            width: 320px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            height: 100vh;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            order: 0;
+            overflow: hidden;
+        }
         .dropzone {
             border: 2px dashed var(--border);
-            border-radius: var(--radius);
-            padding: 3rem 2rem;
+            border-radius: 0;
+            padding: 2rem 1.25rem;
             text-align: center;
             transition: all .25s ease;
-            position: relative;
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             background: var(--surface);
         }
         .dropzone:hover, .dropzone.dragover {
@@ -237,7 +260,7 @@
 
         /* ── File List ── */
         .file-list {
-            margin-top: 1.25rem;
+            margin-top: 0;
             display: flex;
             flex-direction: column;
             gap: .4rem;
@@ -247,7 +270,7 @@
             display: flex;
             align-items: center;
             gap: .75rem;
-            padding: .65rem 1rem;
+            padding: .4rem .75rem;
             background: var(--surface-2);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
@@ -682,12 +705,20 @@
 
 
         @media (max-width: 768px) {
-            .app { flex-direction: column; }
-            .sidebar {
+            .app-body { flex-direction: column; }
+            .dropzone-panel {
                 width: 100%;
                 border-right: none;
                 border-bottom: 1px solid var(--border);
+                order: -2;
+                padding: .5rem;
+            }
+            .sidebar {
+                width: 100%;
+                border-left: none;
+                border-bottom: 1px solid var(--border);
                 max-height: 200px;
+                order: -1;
             }
             .main-content { padding: 1.5rem 1rem 3rem; }
             .actions { flex-direction: column; }
@@ -705,6 +736,16 @@
         <h1>File Merger</h1>
     </div>
     <div class="app-body">
+    <!-- Drop Zone Panel -->
+    <div class="dropzone-panel">
+        <div class="dropzone" id="dropzone">
+            <span class="dropzone-icon">📂</span>
+            <div class="dropzone-title">Přetáhněte soubory sem</div>
+            <div class="dropzone-sub">soubory budou přidány do seznamu níže</div>
+            <textarea id="pathCapture" class="path-capture"></textarea>
+        </div>
+    </div>
+
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
@@ -716,13 +757,6 @@
 
     <!-- Main Content -->
     <div class="main-content">
-    <!-- Drop Zone -->
-    <div class="dropzone" id="dropzone">
-        <span class="dropzone-icon">📂</span>
-        <div class="dropzone-title">Přetáhněte soubory sem</div>
-        <div class="dropzone-sub">soubory budou přidány do seznamu níže</div>
-        <textarea id="pathCapture" class="path-capture"></textarea>
-    </div>
 
     <!-- File List -->
     <div class="file-list" id="fileList"></div>
