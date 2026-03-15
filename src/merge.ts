@@ -9,8 +9,8 @@ import less from 'highlight.js/lib/languages/less';
 import json from 'highlight.js/lib/languages/json';
 import javascript from 'highlight.js/lib/languages/javascript';
 import blade from 'highlight.js/lib/languages/php-template';
-import type { PDFDocument as PDFDocumentType } from 'pdf-lib';
 
+import * as clipboard from 'clipboard-polyfill';
 import { state, MAX_DISPLAY_LINES } from './state';
 import { escapeHtml, formatSize, getLanguage } from './helpers';
 import { t } from './i18n';
@@ -143,16 +143,10 @@ export function initMerge(): void {
     // Copy
     copyBtn.addEventListener('click', async () => {
         try {
-            await navigator.clipboard.writeText(state.fullMergedContent);
+            await clipboard.writeText(state.fullMergedContent);
             toast(t('copiedToClipboard'), 'success');
         } catch {
-            const ta = document.createElement('textarea');
-            ta.value = state.fullMergedContent;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            toast(t('copied'), 'success');
+            toast(t('copyFailed'));
         }
     });
 
