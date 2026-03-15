@@ -849,6 +849,7 @@
     <!-- Actions -->
     <div class="actions" id="mainActions" style="display:none">
         <button class="btn btn-primary" id="mergeBtn" data-i18n="mergeFiles">⛙ Merge files</button>
+        <button class="btn btn-primary" id="downloadPdfBtn" style="display:none" data-i18n="downloadPdf">⬇ Download PDF</button>
         <div class="actions-right">
             <button class="btn btn-danger" id="clearBtn" data-i18n="clearAll">Clear all</button>
         </div>
@@ -898,6 +899,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/blade.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
 <script>
     const MAX_DISPLAY_LINES = 20000;
@@ -950,6 +952,11 @@
             allCleared: 'All cleared',
             updated: 'Updated: {name}',
             lines: 'lines',
+            downloadPdf: '⬇ Download PDF',
+            pdfDownloaded: 'PDF downloaded',
+            pdfBinaryContent: 'PDF binary content',
+            downloadPdfFile: 'Download PDF',
+            pdfFileName: 'File name',
         },
         cs: {
             projects: 'Projekty',
@@ -994,6 +1001,11 @@
             allCleared: 'Vše vymazáno',
             updated: 'Aktualizován: {name}',
             lines: 'lines',
+            downloadPdf: '⬇ Stáhnout PDF',
+            pdfDownloaded: 'PDF staženo',
+            pdfBinaryContent: 'Binární obsah PDF',
+            downloadPdfFile: 'Stáhnout PDF',
+            pdfFileName: 'Název souboru',
         },
     };
 
@@ -1060,6 +1072,7 @@
     const mergeOptions = document.getElementById('mergeOptions');
     const togglePaths = document.getElementById('togglePaths');
     const toggleTrimEmpty = document.getElementById('toggleTrimEmpty');
+    const downloadPdfBtn = document.getElementById('downloadPdfBtn');
 
     // ── Modal ──
     function showModal({ title, body, inputValue, placeholder, confirmText = 'OK', confirmClass = 'btn-primary', showInput = false, resolveData = null }) {
@@ -1258,12 +1271,11 @@
         if (!project) return;
         currentProjectId = id;
         localStorage.setItem('fmerge_activeProject', id);
-        files = (project.files || []).map(f => ({
-            name: f.name,
-            path: f.path,
-            content: f.content,
-            size: f.size
-        }));
+        files = (project.files || []).map(f => {
+            const obj = { name: f.name, path: f.path, content: f.content, size: f.size };
+            if (f.pdfData) obj.pdfData = f.pdfData;
+            return obj;
+        });
         fullMergedContent = '';
         outputContent.innerHTML = '';
         lineNumbers.textContent = '';
@@ -1288,12 +1300,11 @@
         }
         const project = await getProject(currentProjectId);
         if (!project) return;
-        project.files = files.map(f => ({
-            name: f.name,
-            path: f.path,
-            content: f.content,
-            size: f.size
-        }));
+        project.files = files.map(f => {
+            const obj = { name: f.name, path: f.path, content: f.content, size: f.size };
+            if (f.pdfData) obj.pdfData = f.pdfData;
+            return obj;
+        });
         await saveProject(project);
     }
 
@@ -1445,14 +1456,24 @@
                 }
             }
 
-            const content = await readFile(f);
+            const isPdf = f.name.toLowerCase().endsWith('.pdf');
+            let content = null;
+            let pdfData = null;
+            if (isPdf) {
+                const arrayBuf = await readFileAsArrayBuffer(f);
+                pdfData = arrayBufferToBase64(arrayBuf);
+            } else {
+                content = await readFile(f);
+            }
             const existingIndex = files.findIndex(entry => entry.path === path);
+            const fileEntry = { name: f.name, path, content, size: f.size };
+            if (pdfData) fileEntry.pdfData = pdfData;
             if (existingIndex !== -1) {
-                files[existingIndex] = { name: f.name, path, content, size: f.size };
+                files[existingIndex] = fileEntry;
                 updatedIndices.push(existingIndex);
                 toast(t('updated', { name: f.name }), 'success');
             } else {
-                files.push({ name: f.name, path, content, size: f.size });
+                files.push(fileEntry);
             }
         }
         // Capture positions of updated items BEFORE re-render
@@ -1490,6 +1511,8 @@
         fileListEl.innerHTML = '';
         mainActions.style.display = files.length ? 'flex' : 'none';
         mergeOptions.style.display = files.length ? 'flex' : 'none';
+        const hasPdf = files.some(f => f.name.toLowerCase().endsWith('.pdf'));
+        downloadPdfBtn.style.display = hasPdf ? '' : 'none';
 
         // Toggle dropzone vs file list visibility
         if (files.length) {
@@ -1512,8 +1535,9 @@
             const extColor = getExtColor(extRaw);
             const size = formatSize(entry.size);
 
-            const lineCount = entry.content ? entry.content.split('\n').length : 0;
-            const linesText = lineCount ? lineCount.toLocaleString(currentLang) + ' ' + t('lines') : '…';
+            const isPdf = entry.name.toLowerCase().endsWith('.pdf');
+            const lineCount = (!isPdf && entry.content) ? entry.content.split('\n').length : 0;
+            const linesText = isPdf ? 'PDF' : (lineCount ? lineCount.toLocaleString(currentLang) + ' ' + t('lines') : '…');
 
             el.innerHTML = `
       <span class="grip">⠿</span>
@@ -1595,7 +1619,7 @@
             c: '#555555', cpp: '#f34b7d', h: '#555555',
             sh: '#89e051', bash: '#89e051',
             sql: '#e38c00',
-            md: '#083fa1', txt: '#7d7f8c',
+            md: '#083fa1', txt: '#7d7f8c', pdf: '#e74c3c',
         };
         return map[ext] || '#6ee7a0';
     }
@@ -1632,6 +1656,23 @@
 
             for (let i = 0; i < files.length; i++) {
                 const entry = files[i];
+
+                // PDF files – show placeholder in text output
+                if (entry.pdfData) {
+                    if (includePaths) {
+                        plainLinesArray.push(`${entry.path}:`);
+                        htmlLinesArray.push(`<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
+                    }
+                    const placeholder = `[PDF – ${t('pdfBinaryContent')}]`;
+                    plainLinesArray.push(placeholder);
+                    htmlLinesArray.push(`<span style="color: var(--text-dim); font-style: italic;">${escapeHtml(placeholder)}</span>`);
+                    if (i < files.length - 1) {
+                        plainLinesArray.push('');
+                        htmlLinesArray.push('');
+                    }
+                    continue;
+                }
+
                 let contentStr = entry.content || '';
                 const lang = getLanguage(entry.path);
 
@@ -1845,6 +1886,151 @@
             }, 500);
         }, { once: true });
     }
+
+    // ── PDF Helpers ──
+    function readFileAsArrayBuffer(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    function arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+        }
+        return btoa(binary);
+    }
+
+    function base64ToUint8Array(base64) {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    }
+
+    // ── Download PDF ──
+    downloadPdfBtn.addEventListener('click', async () => {
+        const result = await showModal({
+            title: t('downloadPdfFile'),
+            body: `
+                <div class="modal-form-group">
+                    <label>${escapeHtml(t('pdfFileName'))}</label>
+                    <input class="modal-input" type="text" value="merged-files" data-role="pdffilename">
+                </div>
+            `,
+            confirmText: t('downloadPdf'),
+            confirmClass: 'btn-primary',
+            resolveData: (overlay) => {
+                const name = overlay.querySelector('[data-role="pdffilename"]').value.trim();
+                return name || null;
+            }
+        });
+        if (!result) return;
+
+        downloadPdfBtn.disabled = true;
+        downloadPdfBtn.textContent = t('loading');
+
+        try {
+            const { PDFDocument, StandardFonts, rgb } = PDFLib;
+            const mergedPdf = await PDFDocument.create();
+            const includePaths = togglePaths.checked;
+            const trimEmpty = toggleTrimEmpty.checked;
+
+            for (const entry of files) {
+                if (entry.pdfData) {
+                    // PDF file – copy all pages
+                    const pdfBytes = base64ToUint8Array(entry.pdfData);
+                    const srcDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+                    const pages = await mergedPdf.copyPages(srcDoc, srcDoc.getPageIndices());
+                    pages.forEach(page => mergedPdf.addPage(page));
+                } else {
+                    // Text file – render as PDF pages
+                    const font = await mergedPdf.embedFont(StandardFonts.Courier);
+                    const fontSize = 10;
+                    const margin = 50;
+                    const lineHeight = fontSize * 1.4;
+                    const pageWidth = 595;
+                    const pageHeight = 842;
+                    const usableHeight = pageHeight - 2 * margin;
+                    const usableWidth = pageWidth - 2 * margin;
+                    const linesPerPage = Math.floor(usableHeight / lineHeight);
+                    const maxCharsPerLine = Math.floor(usableWidth / (fontSize * 0.6));
+
+                    let contentStr = entry.content || '';
+                    if (trimEmpty) {
+                        contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
+                    }
+
+                    // Build lines with optional path header
+                    let allLines = [];
+                    if (includePaths) {
+                        allLines.push(entry.path + ':');
+                    }
+
+                    const rawLines = contentStr.split('\n');
+                    for (const line of rawLines) {
+                        if (line.length <= maxCharsPerLine) {
+                            allLines.push(line);
+                        } else {
+                            for (let j = 0; j < line.length; j += maxCharsPerLine) {
+                                allLines.push(line.substring(j, j + maxCharsPerLine));
+                            }
+                        }
+                    }
+
+                    // Paginate
+                    for (let p = 0; p < allLines.length; p += linesPerPage) {
+                        const pageLines = allLines.slice(p, p + linesPerPage);
+                        const page = mergedPdf.addPage([pageWidth, pageHeight]);
+                        let y = pageHeight - margin;
+                        for (const ln of pageLines) {
+                            // Replace chars unsupported by WinAnsi with '?'
+                            let safeLine = '';
+                            for (const ch of ln) {
+                                try {
+                                    font.encodeText(ch);
+                                    safeLine += ch;
+                                } catch {
+                                    safeLine += '?';
+                                }
+                            }
+                            page.drawText(safeLine, {
+                                x: margin,
+                                y: y,
+                                size: fontSize,
+                                font: font,
+                                color: rgb(0, 0, 0),
+                            });
+                            y -= lineHeight;
+                        }
+                    }
+                }
+            }
+
+            const pdfBytes = await mergedPdf.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = result + '.pdf';
+            a.click();
+            URL.revokeObjectURL(url);
+            toast(t('pdfDownloaded'), 'success');
+        } catch (err) {
+            toast(t('errorReadingFiles', { message: err.message }));
+        }
+
+        downloadPdfBtn.disabled = false;
+        downloadPdfBtn.textContent = t('downloadPdf');
+    });
 
     function toast(msg, type) {
         toastEl.classList.remove('success');

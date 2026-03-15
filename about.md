@@ -16,6 +16,7 @@ Utilita pro slučování souborů. utilita umí:
 * Zobrazit sloučený výstup se syntax highlightingem podle typu souboru (HTML, XML/SVG, JS, TS, TSX/JSX, PHP, JSON, YAML/YML, NEON, Latte, Blade, CSS/SCSS/LESS) — jazyk se detekuje z přípony v hlavičce každé sekce, názvy souborů jsou zvýrazněny neonově zeleně, highlighting je čistě vizuální a není součástí kopírovaného ani staženého textu
 * Zkopírovat sloučený obsah do schránky (bez čísel řádků a bez syntax highlightingu)
 * Stáhnout sloučený obsah s možností zvolit název souboru a formát (txt, md, json, xml, csv, html, log) — výchozí název `merged-files`, výchozí formát `.txt`, výběr přes modální dialog
+* Slučování PDF souborů — automatická detekce PDF souborů v seznamu, tlačítko „Download PDF" se zobrazí jakmile je v seznamu alespoň jeden PDF soubor. Pokud jsou všechny soubory PDF, sloučí se do jednoho PDF. Pokud jsou v seznamu i textové soubory, jejich obsah se převede na PDF stránky (Courier, A4, automatické zalamování řádků) a vloží do výsledného PDF. PDF soubory se v textovém výstupu zobrazují jako placeholder `[PDF – binární obsah]`. Používá knihovnu pdf-lib.
 * Vymazat vše (soubory i výstup) jedním tlačítkem — s potvrzovacím dialogem
 * Zobrazovat metadata výstupu (počet souborů, řádků, velikost)
 * Zobrazovat toast notifikace pro zpětnou vazbu uživateli (pozicované dole uprostřed) — úspěšné akce mají zelené pozadí s bílým textem a checkmarkem, varovné/chybové zůstávají žluté
