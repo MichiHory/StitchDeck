@@ -60,7 +60,7 @@ export function initMerge(): void {
         if (!state.files.length) return;
 
         mergeBtn.disabled = true;
-        mergeBtn.textContent = t('loading');
+        mergeBtn.querySelector('[data-i18n]')!.textContent = t('loading');
 
         try {
             const plainLinesArray: string[] = [];
@@ -164,7 +164,7 @@ export function initMerge(): void {
         }
 
         mergeBtn.disabled = false;
-        mergeBtn.textContent = t('mergeFiles');
+        mergeBtn.querySelector('[data-i18n]')!.textContent = t('mergeFiles');
     });
 
     // Copy
@@ -244,7 +244,7 @@ export function initMerge(): void {
         if (!result) return;
 
         downloadPdfBtn.disabled = true;
-        downloadPdfBtn.textContent = t('loading');
+        downloadPdfBtn.querySelector('[data-i18n]')!.textContent = t('loading');
 
         try {
             const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
@@ -332,7 +332,7 @@ export function initMerge(): void {
         }
 
         downloadPdfBtn.disabled = false;
-        downloadPdfBtn.textContent = t('downloadPdf');
+        downloadPdfBtn.querySelector('[data-i18n]')!.textContent = t('downloadPdf');
     });
 
     // Clear

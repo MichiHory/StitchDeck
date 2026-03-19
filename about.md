@@ -20,10 +20,23 @@ Utilita pro slučování souborů. utilita umí:
 * Přepínač „Převést PDF dokumenty na text" — zobrazí se jen pokud je v seznamu alespoň jeden PDF soubor, defaultně zapnutý. Když je aktivní, z PDF souborů se extrahuje text (pomocí pdfjs-dist) a vloží do merged výstupu místo placeholderu `[PDF – binární obsah]`. Když je vypnutý, zobrazí se původní placeholder. Preference se ukládá do localStorage. Extrakce textu řadí textové prvky podle vizuální pozice (Y shora dolů, X zleva doprava), seskupuje je do řádků na základě výšky fontu a vkládá mezery/tabulátory podle horizontálních vzdáleností mezi prvky.
 * Vymazat vše (soubory i výstup) jedním tlačítkem — s potvrzovacím dialogem
 * Zobrazovat metadata výstupu (počet souborů, řádků, velikost, odhadovaný počet tokenů pro LLM)
-* Zobrazovat toast notifikace pro zpětnou vazbu uživateli (pozicované dole uprostřed) — úspěšné akce mají zelené pozadí s bílým textem a checkmarkem, varovné/chybové zůstávají žluté
+* Zobrazovat toast notifikace pro zpětnou vazbu uživateli (pozicované dole uprostřed, pill shape s border a backdrop blur) — úspěšné akce mají zelené accent pozadí a text, varovné/chybové mají neutrální styl
 * Při aktualizaci již nahraného souboru zobrazit vizuální efekt — starý box se rozpadne na zelené částice (particle burst), které se rozletí do okolí, a nový box se nafoukne jako bublina (grow-in animace)
 * Modalni okna pro akce
 * Internacionalizace (i18n) — podpora více jazyků s přepínačem v horní liště, výchozí jazyk angličtina, dostupné jazyky: EN, CS. Překlad používá slovníkový systém s `t(key, params)` funkcí, statické HTML prvky mají `data-i18n` atributy, jazyková preference se ukládá do localStorage
+
+## Design
+
+* Tmavý (dark) theme s propracovanou barevnou paletou — černé pozadí (#09090b), povrchové úrovně (#131316, #1a1a1f, #222228), zelený accent (#22c55e)
+* Typografie: Inter (UI text), JetBrains Mono (kód, metadata)
+* SVG ikony v tlačítkách místo emoji — merge, download, copy, upload ikony
+* Logo v top baru s gradientním zeleným pozadím a SVG git-merge ikonou
+* Tlačítka s SVG ikonami uvnitř `<span data-i18n>` pro správnou funkci překladů
+* Modální okna s backdrop blur efektem
+* Jemné přechodové animace (150ms cubic-bezier)
+* Dropzona s inset glow efektem při hoveru/dragoveru
+* Soubory v seznamu s plynulým zobrazováním remove tlačítka na hover
+* Scrollbary — tenké, custom stylované přes CSS
 
 ## Technický stack
 
