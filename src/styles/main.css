@@ -705,7 +705,6 @@ body {
     white-space: pre;
     border-right: 1px solid var(--border);
     min-width: 3.5rem;
-    font-size: .75rem;
 }
 .output-content {
     padding: 1rem 1.25rem;
