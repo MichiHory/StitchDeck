@@ -24,10 +24,11 @@ Utilita pro slučování souborů. utilita umí:
 * Při aktualizaci již nahraného souboru zobrazit vizuální efekt — starý box se rozpadne na zelené částice (particle burst), které se rozletí do okolí, a nový box se nafoukne jako bublina (grow-in animace)
 * Modalni okna pro akce
 * Internacionalizace (i18n) — podpora více jazyků s přepínačem v horní liště, výchozí jazyk angličtina, dostupné jazyky: EN, CS. Překlad používá slovníkový systém s `t(key, params)` funkcí, statické HTML prvky mají `data-i18n` atributy, jazyková preference se ukládá do localStorage
+* Přepínač světlého/tmavého režimu v horní liště — tlačítko s ikonami slunce (pro přepnutí na light) a měsíce (pro přepnutí na dark), preference se ukládá do localStorage, výchozí režim tmavý
 
 ## Design
 
-* Tmavý (dark) theme s propracovanou barevnou paletou — černé pozadí (#09090b), povrchové úrovně (#131316, #1a1a1f, #222228), zelený accent (#22c55e)
+* Tmavý (dark) a světlý (light) theme s propracovanou barevnou paletou — dark: černé pozadí (#09090b), povrchové úrovně (#131316, #1a1a1f, #222228), zelený accent (#22c55e); light: světlé pozadí (#f5f5f7), bílé povrchy (#ffffff), tmavší zelený accent (#16a34a)
 * Typografie: Inter (UI text), JetBrains Mono (kód, metadata)
 * SVG ikony v tlačítkách místo emoji — merge, download, copy, upload ikony
 * Logo v top baru s gradientním zeleným pozadím a SVG git-merge ikonou
@@ -59,3 +60,4 @@ Utilita pro slučování souborů. utilita umí:
   - `src/dropzone.ts` — drag & drop nahrávání souborů
   - `src/merge.ts` — slučování, kopírování, stahování (text i PDF)
   - `src/lang-switcher.ts` — přepínač jazyků
+  - `src/theme-toggle.ts` — přepínač světlého/tmavého režimu
