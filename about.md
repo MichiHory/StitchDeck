@@ -1,6 +1,6 @@
 Utilita pro slučování souborů. utilita umí:
 
-* Spravovat projekty v pravém panelu — vytvářet, přepínat kliknutím, přejmenovávat a mazat projekty (inline tlačítka u každého projektu)
+* Spravovat projekty v levém panelu — vytvářet, přepínat kliknutím, přejmenovávat a mazat projekty (inline tlačítka u každého projektu)
 * Persistentně ukládat nahrané soubory do IndexedDB — soubory přežijí zavření prohlížeče
 * Automaticky obnovit poslední aktivní projekt při spuštění aplikace
 * Nahrávat soubory přetažením (drag & drop) — dropzona se zobrazí přes celou oblast hlavního obsahu (main-content) když projekt nemá žádné soubory, po přidání souborů se při přetahování zobrazí overlay přes celou viditelnou oblast main-content s fixní pozicí (neroste s obsahem)
