@@ -83,7 +83,7 @@ Utilita pro slučování souborů. utilita umí:
   - Omezení na 20 000 řádků s upozorněním na zkrácení
   - Syntax highlighting podle typu souboru
 * Syntax highlighting
-  - Podporované jazyky: HTML, XML/SVG, JS, TS, TSX/JSX, PHP, JSON, YAML/YML, NEON, Latte, Blade, CSS/SCSS/LESS
+  - Podporované jazyky: HTML/HTM, XML/SVG, JS/MJS/CJS, TS, TSX/JSX, PHP, JSON, YAML/YML, NEON, Latte, Blade, Vue, Svelte, CSS/SCSS/LESS, Python, Ruby, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Scala, Perl, R, Bash/Shell/Zsh, SQL, Lua, Dart, Haskell, Objective-C, Groovy/Gradle, PowerShell, Dockerfile, INI/TOML/conf, Markdown
   - Jazyk se detekuje z přípony v hlavičce každé sekce
   - Názvy souborů zvýrazněny neonově zeleně (#27db0f)
   - Highlighting je čistě vizuální — není součástí kopírovaného ani staženého textu

@@ -54,15 +54,30 @@ export function getExtColor(ext: string): string {
         latte: '#6cc644',
         blade: '#f05340',
         css: '#264de4', scss: '#cd6799', less: '#1d365d',
-        py: '#3776ab',
-        rb: '#cc342d',
+        py: '#3776ab', pyw: '#3776ab',
+        rb: '#cc342d', rake: '#cc342d', gemspec: '#cc342d',
         java: '#f89820',
         go: '#00add8',
         rs: '#dea584',
-        c: '#555555', cpp: '#f34b7d', h: '#555555',
-        sh: '#89e051', bash: '#89e051',
+        c: '#555555', cpp: '#f34b7d', cc: '#f34b7d', cxx: '#f34b7d', h: '#555555', hpp: '#f34b7d', hxx: '#f34b7d', hh: '#f34b7d',
+        cs: '#68217a',
+        swift: '#f05138',
+        kt: '#7f52ff', kts: '#7f52ff',
+        scala: '#dc322f', sc: '#dc322f',
+        pl: '#0298c3', pm: '#0298c3',
+        r: '#276dc3',
+        sh: '#89e051', bash: '#89e051', zsh: '#89e051',
         sql: '#e38c00',
-        md: '#083fa1', txt: '#7d7f8c', pdf: '#e74c3c',
+        lua: '#000080',
+        dart: '#00b4ab',
+        hs: '#5e5086', lhs: '#5e5086',
+        m: '#438eff', mm: '#438eff',
+        groovy: '#4298b8', gradle: '#02303a',
+        ps1: '#012456', psm1: '#012456', psd1: '#012456',
+        ini: '#d1dbe0', cfg: '#d1dbe0', conf: '#d1dbe0', toml: '#9c4221', env: '#ecd53f',
+        md: '#083fa1', mdx: '#083fa1', txt: '#7d7f8c', pdf: '#e74c3c',
+        cjs: '#f7df1e',
+        dockerfile: '#384d54',
     };
     return map[ext] || '#6ee7a0';
 }
@@ -153,9 +168,9 @@ function collapseEmptyLines(content: string): string {
 
 export function getLanguage(filename: string): string {
     const ext = filename.split('.').pop()!.toLowerCase();
-    if (['js', 'jsx'].includes(ext)) return 'javascript';
+    if (['js', 'jsx', 'mjs', 'cjs'].includes(ext)) return 'javascript';
     if (['ts', 'tsx'].includes(ext)) return 'typescript';
-    if (['html', 'xml', 'latte', 'vue', 'svelte'].includes(ext)) return 'xml';
+    if (['html', 'htm', 'xml', 'svg', 'latte', 'vue', 'svelte'].includes(ext)) return 'xml';
     if (['blade'].includes(ext)) return 'blade';
     if (['php'].includes(ext)) return 'php';
     if (['json'].includes(ext)) return 'json';
@@ -163,5 +178,29 @@ export function getLanguage(filename: string): string {
     if (['css'].includes(ext)) return 'css';
     if (['scss'].includes(ext)) return 'scss';
     if (['less'].includes(ext)) return 'less';
+    if (['py', 'pyw'].includes(ext)) return 'python';
+    if (['rb', 'rake', 'gemspec'].includes(ext)) return 'ruby';
+    if (['java'].includes(ext)) return 'java';
+    if (['c', 'h'].includes(ext)) return 'c';
+    if (['cpp', 'cc', 'cxx', 'hpp', 'hxx', 'hh'].includes(ext)) return 'cpp';
+    if (['cs'].includes(ext)) return 'csharp';
+    if (['go'].includes(ext)) return 'go';
+    if (['rs'].includes(ext)) return 'rust';
+    if (['swift'].includes(ext)) return 'swift';
+    if (['kt', 'kts'].includes(ext)) return 'kotlin';
+    if (['scala', 'sc'].includes(ext)) return 'scala';
+    if (['pl', 'pm'].includes(ext)) return 'perl';
+    if (['r'].includes(ext)) return 'r';
+    if (['sh', 'bash', 'zsh'].includes(ext)) return 'bash';
+    if (['sql'].includes(ext)) return 'sql';
+    if (['lua'].includes(ext)) return 'lua';
+    if (['dart'].includes(ext)) return 'dart';
+    if (['hs', 'lhs'].includes(ext)) return 'haskell';
+    if (['m', 'mm'].includes(ext)) return 'objectivec';
+    if (['groovy', 'gradle'].includes(ext)) return 'groovy';
+    if (['ps1', 'psm1', 'psd1'].includes(ext)) return 'powershell';
+    if (['ini', 'cfg', 'conf', 'toml', 'env'].includes(ext)) return 'ini';
+    if (['md', 'mdx'].includes(ext)) return 'markdown';
+    if (filename.toLowerCase() === 'dockerfile' || ext === 'dockerfile') return 'dockerfile';
     return 'plaintext';
 }
