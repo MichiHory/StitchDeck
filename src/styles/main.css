@@ -378,12 +378,56 @@ body {
     color: var(--accent);
 }
 
+/* ── File List Toolbar ── */
+.file-list-toolbar {
+    display: flex;
+    align-items: center;
+    margin-bottom: .6rem;
+}
+.view-toggle {
+    display: flex;
+    gap: 0;
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+.view-toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 5px 12px;
+    font-size: .75rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+}
+.view-toggle-btn:not(:last-child) {
+    border-right: 1px solid var(--border);
+}
+.view-toggle-btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+.view-toggle-btn:hover:not(.active) {
+    background: var(--surface-2);
+    color: var(--text-secondary);
+}
+
 /* ── File List ── */
 .file-list {
     margin-top: 0;
     display: flex;
     flex-direction: column;
     gap: .35rem;
+}
+.file-list--tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: .4rem;
 }
 .file-item {
     position: relative;
@@ -510,6 +554,168 @@ body {
 .file-item .remove-btn:hover {
     color: var(--danger);
     background: var(--danger-dim);
+}
+
+/* ── Order Numbers ── */
+.item-order {
+    color: var(--text-dim);
+    font-size: .65rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+    min-width: 1.2rem;
+    text-align: center;
+    opacity: .5;
+}
+
+/* ── Tile View ── */
+.file-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .3rem;
+    padding: .6rem .5rem .45rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    font-size: .78rem;
+    cursor: grab;
+    transition: all var(--transition);
+    user-select: none;
+    text-align: center;
+}
+.file-tile:hover {
+    border-color: var(--border-hover);
+    background: var(--surface-2);
+}
+.file-tile.dragging {
+    opacity: .35;
+    transform: scale(.95);
+}
+.file-tile.drag-over-item {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    box-shadow: 0 0 16px var(--accent-glow);
+}
+.file-tile .tile-order {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    color: var(--text-dim);
+    font-size: .6rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    opacity: .5;
+}
+.file-tile .file-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: var(--radius-xs);
+    display: grid;
+    place-items: center;
+    font-size: .6rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -.02em;
+}
+.file-tile .tile-text-zone {
+    width: calc(100% + 12px);
+    margin: 0 -6px;
+    padding: 2px 6px;
+    min-width: 0;
+    border-radius: 4px;
+}
+.file-tile .tile-name {
+    width: 100%;
+    font-weight: 500;
+    font-size: .75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+    line-height: 1.3;
+}
+.file-tile .tile-path {
+    width: 100%;
+    color: var(--text-dim);
+    font-size: .6rem;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: rtl;
+    text-align: left;
+    line-height: 1.2;
+}
+.file-tile .tile-meta {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-dim);
+    font-size: .6rem;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+}
+.file-tile .tile-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--radius-xs);
+    font-size: .7rem;
+    line-height: 1;
+    opacity: 0;
+    transition: all var(--transition);
+}
+.file-tile:hover .tile-remove {
+    opacity: 1;
+}
+.file-tile .tile-remove:hover {
+    color: var(--danger);
+    background: var(--danger-dim);
+}
+
+/* Tile grow-in animation */
+.file-tile.grow-in {
+    animation: file-grow-in .45s cubic-bezier(.34,1.56,.64,1) forwards;
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--accent-glow);
+}
+.file-tile.grow-in.settled {
+    transition: border-color .5s ease, box-shadow .5s ease;
+    border-color: var(--border);
+    box-shadow: none;
+}
+
+/* ── Tile Tooltip ── */
+.tile-tooltip {
+    position: fixed;
+    z-index: 1000;
+    background: var(--surface-3);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem;
+    padding: .35rem .65rem;
+    border-radius: var(--radius-xs);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s ease;
+    max-width: 90vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tile-tooltip.visible {
+    opacity: 1;
 }
 
 /* ── Actions ── */

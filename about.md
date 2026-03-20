@@ -6,6 +6,7 @@ Utilita pro slučování souborů. utilita umí:
 * Nahrávat soubory přetažením (drag & drop) — dropzona se zobrazí přes celou oblast hlavního obsahu (main-content) když projekt nemá žádné soubory, po přidání souborů se při přetahování zobrazí overlay přes celou viditelnou oblast main-content s fixní pozicí (neroste s obsahem)
 * Zachytávat kompletní cesty souborů přes skrytý textarea při přetažení
 * Řadit soubory přetažením v seznamu (drag & drop reorder)
+* Přepínač zobrazení seznamu souborů — režim seznam (list) a dlaždice (tiles) s přepínačem v toolbaru nad seznamem. Dlaždice zobrazují kompaktně ikonu, název souboru (zkrácený pokud se nevejde), zkrácenou cestu (direction: rtl, zobrazuje konec cesty, celá cesta se zobrazí jako title tooltip při hoveru, tooltip se potlačí během přetahování) a velikost. V obou režimech je číslování pořadí a funguje drag & drop reorder. Preference se ukládá do localStorage
 * Barevně odlišit typ souboru v seznamu podle přípony
 * Odebírat jednotlivé soubory tlačítkem ✕
 * Sloučit všechny soubory do jednoho textového výstupu ve formátu `cesta:\nobsah`

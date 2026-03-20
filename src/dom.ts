@@ -25,3 +25,6 @@ export const togglePdfToText = document.getElementById('togglePdfToText')! as HT
 export const togglePdfToTextLabel = document.getElementById('togglePdfToTextLabel')!;
 export const pathCapture = document.getElementById('pathCapture')! as HTMLTextAreaElement;
 export const langSwitcher = document.getElementById('langSwitcher')!;
+export const viewToggle = document.getElementById('viewToggle')!;
+export const viewListBtn = document.getElementById('viewListBtn')! as HTMLButtonElement;
+export const viewTilesBtn = document.getElementById('viewTilesBtn')! as HTMLButtonElement;

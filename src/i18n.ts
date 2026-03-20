@@ -51,6 +51,8 @@ const translations: Record<LangKey, Record<string, string>> = {
         convertPdfToText: 'Convert PDF documents to text',
         downloadPdfFile: 'Download PDF',
         pdfFileName: 'File name',
+        viewList: 'List',
+        viewTiles: 'Tiles',
     },
     cs: {
         projects: 'Projekty',
@@ -102,6 +104,8 @@ const translations: Record<LangKey, Record<string, string>> = {
         convertPdfToText: 'Převést PDF dokumenty na text',
         downloadPdfFile: 'Stáhnout PDF',
         pdfFileName: 'Název souboru',
+        viewList: 'Seznam',
+        viewTiles: 'Dlaždice',
     },
 };
 

@@ -7,6 +7,7 @@ import { initThemeToggle } from './theme-toggle';
 import { initProjects, createNewProject } from './projects';
 import { initDropzone } from './dropzone';
 import { initMerge } from './merge';
+import { initViewToggle } from './file-list';
 import { newProjectBtn } from './dom';
 
 // Init theme
@@ -15,6 +16,9 @@ initThemeToggle();
 // Init i18n
 renderLangSwitcher();
 applyTranslations();
+
+// Init view toggle
+initViewToggle();
 
 // Init dropzone
 initDropzone();
