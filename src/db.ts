@@ -14,10 +14,19 @@ export interface FileEntry {
     includeTitle?: boolean;
 }
 
+export interface GitHubConfig {
+    owner: string;
+    repo: string;
+    branch: string;
+    token?: string;
+    customExcludes: string[];
+}
+
 export interface Project {
     id: string;
     name: string;
     files: FileEntry[];
+    github?: GitHubConfig;
 }
 
 function openDB(): Promise<IDBDatabase> {

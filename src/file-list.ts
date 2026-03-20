@@ -5,6 +5,7 @@ import {
     fileListEl, mainActions, mergeOptions, downloadPdfBtn,
     dropzone, fileListWrapper, togglePdfToTextLabel,
     viewListBtn, viewTilesBtn, addCustomTextBtn,
+    githubBtn,
 } from './dom';
 import { scheduleSave } from './projects';
 import { showModal } from './modal';

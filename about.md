@@ -20,6 +20,7 @@ Utilita pro slučování souborů. utilita umí:
 * Slučování PDF souborů — automatická detekce PDF souborů v seznamu, tlačítko „Download PDF" se zobrazí jakmile je v seznamu alespoň jeden PDF soubor. Pokud jsou všechny soubory PDF, sloučí se do jednoho PDF. Pokud jsou v seznamu i textové soubory, jejich obsah se převede na PDF stránky (Courier, A4, automatické zalamování řádků) a vloží do výsledného PDF. Používá knihovnu pdf-lib.
 * Přepínač „Převést PDF dokumenty na text" — zobrazí se jen pokud je v seznamu alespoň jeden PDF soubor, defaultně zapnutý. Když je aktivní, z PDF souborů se extrahuje text (pomocí pdfjs-dist) a vloží do merged výstupu místo placeholderu `[PDF – binární obsah]`. Když je vypnutý, zobrazí se původní placeholder. Preference se ukládá do localStorage. Extrakce textu řadí textové prvky podle vizuální pozice (Y shora dolů, X zleva doprava), seskupuje je do řádků na základě výšky fontu a vkládá mezery/tabulátory podle horizontálních vzdáleností mezi prvky.
 * Vlastní texty (custom text) — možnost vkládat vlastní textové záznamy mezi soubory pomocí fialového tlačítka „Přidat text" v toolbaru. Vlastní texty mají povinný nadpis (validace s chybovou hláškou při prázdném nadpisu) a volitelný obsah, zobrazují se ve výpisu vedle souborů s fialovým barevným odlišením (border, ikona, nadpis). V režimu seznam i dlaždice zobrazují nadpis místo názvu souboru a náhled obsahu místo cesty. Každý vlastní text má individuální přepínač, zda se má nadpis propsat do exportu (defaultně zapnutý). Při sloučení se chovají jako .md soubory (plaintext, bez syntax highlightingu). Editace kliknutím na fialovou ikonu tužky (ikona při hoveru zvýrazní a zvětší jako indikace klikatelnosti) nebo dvojklikem na celou dlaždici — otevře zvětšený modální dialog s nadpisem, pozicí (číslo 1–N, default 1 pro nový, aktuální pro editaci, max = počet položek +1 pro nový / počet položek pro editaci), textareou pro obsah a přepínačem vložení nadpisu do exportu. Nadpisy vlastních textů jsou ve výstupu zvýrazněny fialově (#a78bfa). Podporují drag & drop řazení spolu s ostatními soubory. Persistentně se ukládají do IndexedDB jako součást projektu.
+* Nahrávání souborů z GitHub repozitáře — tlačítko „GitHub" v toolbaru nad seznamem souborů otevře modální dialog pro nastavení propojení s GitHub repozitářem (owner/repo nebo plná URL, volitelný access token pro soukromé repozitáře, výběr větve s možností načtení seznamu větví z API, vlastní exclude pravidla nad rámec .gitignore). Systém používá GitHub Trees API pro rekurzivní načtení struktury repozitáře, parsuje všechny .gitignore soubory v repozitáři a respektuje jejich pravidla, automaticky přeskakuje binární soubory (obrázky, fonty, archivy, spustitelné soubory atd.). Soubory se stahují přes raw.githubusercontent.com v dávkách po 10 pro optimální výkon. Nastavení GitHub propojení se ukládá do IndexedDB jako součást projektu (interface GitHubConfig: owner, repo, branch, token, customExcludes). Po připojení se zobrazí stavový řádek pod toolbarem s názvem repozitáře, aktuální větví, tlačítkem synchronizace (aktualizuje načtené soubory), tlačítkem nastavení (otevře dialog s předvyplněnými hodnotami) a tlačítkem odpojení. Při synchronizaci se nahradí všechny ne-custom-text soubory novými z GitHubu, vlastní texty zůstávají. Průběh synchronizace zobrazuje modální okno s progress barem a informací o stavu. Přepnutí projektu aktualizuje zobrazení stavového řádku podle uloženého GitHub propojení daného projektu. Plná podpora i18n (EN/CS).
 * Vymazat vše (soubory i výstup) jedním tlačítkem — s potvrzovacím dialogem
 * Zobrazovat metadata výstupu (počet souborů, řádků, velikost, odhadovaný počet tokenů pro LLM)
 * Zobrazovat toast notifikace pro zpětnou vazbu uživateli (pozicované dole uprostřed, pill shape s border a backdrop blur) — úspěšné akce mají zelené accent pozadí a text, varovné/chybové mají neutrální styl
@@ -44,7 +45,7 @@ Utilita pro slučování souborů. utilita umí:
 ## Technický stack
 
 * **Build**: Vite 8 (Rolldown) + TypeScript
-* **Závislosti**: highlight.js (syntax highlighting), pdf-lib (PDF operace), pdfjs-dist (extrakce textu z PDF)
+* **Závislosti**: highlight.js (syntax highlighting), pdf-lib (PDF operace), pdfjs-dist (extrakce textu z PDF), GitHub REST API (fetch repozitářů, bez externích knihoven)
 * **Struktura projektu**:
   - `index.html` — HTML šablona
   - `src/main.ts` — vstupní bod, inicializace
@@ -61,5 +62,7 @@ Utilita pro slučování souborů. utilita umí:
   - `src/file-list.ts` — renderování seznamu souborů, drag & drop reorder
   - `src/dropzone.ts` — drag & drop nahrávání souborů
   - `src/merge.ts` — slučování, kopírování, stahování (text i PDF)
+  - `src/github.ts` — GitHub API integrace (fetch repozitáře, .gitignore parsing, synchronizace)
+  - `src/github-init.ts` — inicializace GitHub UI eventů (tlačítka, odpojení)
   - `src/lang-switcher.ts` — přepínač jazyků
   - `src/theme-toggle.ts` — přepínač světlého/tmavého režimu

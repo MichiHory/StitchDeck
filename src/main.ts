@@ -8,6 +8,7 @@ import { initProjects, createNewProject } from './projects';
 import { initDropzone } from './dropzone';
 import { initMerge } from './merge';
 import { initViewToggle } from './file-list';
+import { initGitHub } from './github-init';
 import { newProjectBtn } from './dom';
 
 // Init theme
@@ -25,6 +26,9 @@ initDropzone();
 
 // Init merge, copy, download, clear
 initMerge();
+
+// Init GitHub integration
+initGitHub();
 
 // New project button
 newProjectBtn.addEventListener('click', () => createNewProject());

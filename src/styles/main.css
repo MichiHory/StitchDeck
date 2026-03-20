@@ -1328,6 +1328,183 @@ html.light .btn-add-text:hover {
     margin-top: .25rem;
 }
 
+/* ── GitHub Button ── */
+.btn-github {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 5px 12px;
+    font-size: .75rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    border-radius: var(--radius-xs);
+    margin-left: .25rem;
+}
+.btn-github:hover {
+    background: var(--surface-3);
+    color: var(--text);
+    border-color: var(--border-hover);
+}
+
+/* ── GitHub Status Bar ── */
+.gh-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .4rem .65rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    margin-bottom: .6rem;
+    gap: .5rem;
+    font-size: .75rem;
+}
+.gh-status-info {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--text-dim);
+    min-width: 0;
+}
+.gh-status-info svg {
+    flex-shrink: 0;
+    opacity: .6;
+}
+.gh-status-repo {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.gh-status-branch {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .68rem;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    padding: 1px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+}
+.gh-status-actions {
+    display: flex;
+    gap: .3rem;
+    flex-shrink: 0;
+}
+.gh-sync-btn {
+    gap: .3rem;
+}
+.gh-sync-btn svg {
+    transition: transform .3s ease;
+}
+.gh-sync-btn:hover svg {
+    transform: rotate(90deg);
+}
+.gh-settings-btn,
+.gh-disconnect-btn {
+    padding: .35rem .5rem !important;
+}
+.gh-disconnect-btn:hover {
+    color: var(--danger) !important;
+    border-color: var(--danger-border) !important;
+    background: var(--danger-dim) !important;
+}
+
+/* ── GitHub Branch Row ── */
+.gh-branch-row {
+    display: flex;
+    gap: .4rem;
+    align-items: stretch;
+}
+.gh-branch-row .modal-input {
+    flex: 1;
+}
+.gh-load-branches {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* ── GitHub Branch List ── */
+.gh-branch-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem;
+    margin-bottom: .85rem;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: .3rem 0;
+}
+.gh-branch-chip {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 3px 10px;
+    font-size: .72rem;
+    font-family: 'JetBrains Mono', monospace;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+.gh-branch-chip:hover {
+    background: var(--surface-3);
+    border-color: var(--border-hover);
+    color: var(--text);
+}
+.gh-branch-chip.active {
+    background: var(--accent-dim);
+    border-color: var(--accent-border);
+    color: var(--accent);
+}
+
+/* ── GitHub Progress Modal ── */
+.gh-progress-modal {
+    text-align: center;
+    max-width: 380px;
+}
+.gh-progress-text {
+    color: var(--text-secondary);
+    font-size: .84rem;
+    margin-bottom: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+.gh-progress-bar {
+    height: 3px;
+    background: var(--surface-3);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.gh-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    animation: gh-progress-indeterminate 1.5s ease-in-out infinite;
+}
+@keyframes gh-progress-indeterminate {
+    0% { width: 0; margin-left: 0; }
+    50% { width: 60%; margin-left: 20%; }
+    100% { width: 0; margin-left: 100%; }
+}
+
+/* ── Modal Hint ── */
+.modal-hint {
+    font-size: .72rem;
+    color: var(--text-dim);
+    margin-top: .15rem;
+}
+
+/* ── Modal Textarea Small ── */
+.modal-textarea--sm {
+    min-height: 80px;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
     .app-body { flex-direction: column; }

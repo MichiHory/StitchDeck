@@ -9,6 +9,7 @@ import { renderFileList } from './file-list';
 import {
     projectListEl, outputContent, lineNumbers,
     outputSection, truncationWarning,
+    ghStatusBar, ghStatusRepo, ghStatusBranch,
 } from './dom';
 
 export function scheduleSave(): void {
@@ -39,6 +40,18 @@ export async function persistCurrentProject(): Promise<void> {
     await saveProject(project);
 }
 
+export function updateGitHubStatus(github?: import('./db').GitHubConfig): void {
+    if (github) {
+        ghStatusBar.style.display = 'flex';
+        ghStatusRepo.textContent = `${github.owner}/${github.repo}`;
+        ghStatusBranch.textContent = github.branch;
+    } else {
+        ghStatusBar.style.display = 'none';
+        ghStatusRepo.textContent = '';
+        ghStatusBranch.textContent = '';
+    }
+}
+
 export async function switchToProject(id: string): Promise<void> {
     const project = await getProject(id);
     if (!project) return;
@@ -59,6 +72,7 @@ export async function switchToProject(id: string): Promise<void> {
     lineNumbers.textContent = '';
     outputSection.style.display = 'none';
     truncationWarning.classList.remove('visible');
+    updateGitHubStatus(project.github);
     renderFileList();
 }
 
