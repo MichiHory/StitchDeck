@@ -1635,6 +1635,63 @@ html.light .btn-add-text:hover {
     min-height: 80px;
 }
 
+/* ── Security Warning ── */
+.security-warning-body {
+    font-size: .82rem;
+}
+.security-warning-intro {
+    color: var(--text-secondary);
+    margin-bottom: .5rem;
+    line-height: 1.5;
+}
+.security-warning-count {
+    color: var(--warning);
+    font-weight: 600;
+    margin-bottom: .75rem;
+}
+.security-table-wrap {
+    max-height: 340px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+}
+.security-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .78rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+.security-table th {
+    position: sticky;
+    top: 0;
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-align: left;
+    padding: .45rem .6rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+.security-table td {
+    padding: .4rem .6rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text);
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.security-table tr:last-child td {
+    border-bottom: none;
+}
+.security-table tr:hover td {
+    background: var(--surface-2);
+}
+.security-table td.security-match {
+    color: var(--danger);
+    font-weight: 500;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
     .app-body { flex-direction: column; }

@@ -1,4 +1,4 @@
-Utilita pro slučování souborů. utilita umí:
+Utilita pro slučování souborů pro LLM. utilita umí:
 
 ## Správa projektů
 
@@ -77,6 +77,7 @@ Utilita pro slučování souborů. utilita umí:
   - LLM-optimalizovaný formát (defaultně zapnutý) — přidá `<file_map>` s číslovaným seznamem souborů na začátek a obalí obsah každého souboru do `<file path="...">...</file>` XML tagů (inspirováno Repomix formátem, optimální pro Claude, GPT i Gemini)
   - Přepínače „Include file paths" a „LLM-optimized format" se vzájemně vylučují — zapnutí jednoho automaticky vypne druhý; při inicializaci má přednost LLM formát
   - Komprese exportu pro LLM (defaultně vypnutý) — odstraní komentáře (řádkové i blokové pro C-style, hash, HTML a SQL jazyky), zkolabuje po sobě jdoucí prázdné řádky, zredukuje odsazení (4 mezery→2, taby→2 mezery, kromě Pythonu), ořízne trailing whitespace; markdown a plaintext se pouze kolabují prázdné řádky (komentáře jsou obsah)
+  - Bezpečnostní sken před sloučením (defaultně zapnutý) — před sloučením prohledá obsah souborů a detekuje potenciální tajné klíče, tokeny, hesla, privátní klíče, connection stringy a další citlivé údaje; při nálezu zobrazí modální varování s tabulkou nálezů (soubor, řádek, typ, detail, maskovaná shoda); uživatel může varování ignorovat a pokračovat ve sloučení, nebo zrušit operaci
   - Převod PDF dokumentů na text — zobrazí se jen pokud je v seznamu alespoň jeden PDF soubor (defaultně zapnutý)
 * Zobrazení sloučeného výstupu
   - Číslování řádků (čísla nejsou součástí textu — nejdou kopírovat, nejsou v selekci)
@@ -245,6 +246,7 @@ Utilita pro slučování souborů. utilita umí:
   - `fmerge_toggleTrimEmpty` — ořezávání prázdných řádků
   - `fmerge_togglePdfToText` — extrakce textu z PDF
   - `fmerge_toggleCompress` — komprese exportu pro LLM
+  - `fmerge_toggleSecurityScan` — bezpečnostní sken před sloučením
   - `fmerge_toggleFileMap` — vložení mapy souborů na začátek
   - `fmerge_lang` — jazyk (en/cs)
   - `fmerge_theme` — téma (dark/light)

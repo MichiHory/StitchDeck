@@ -35,7 +35,7 @@ import ini from 'highlight.js/lib/languages/ini';
 import markdown from 'highlight.js/lib/languages/markdown';
 
 import {MAX_DISPLAY_LINES, state} from './state';
-import {cleanPath, compressForLLM, countTokens, escapeHtml, formatSize, formatTokens, getLanguage} from './helpers';
+import {cleanPath, compressForLLM, countTokens, escapeHtml, formatSize, formatTokens, getLanguage, readFile, scanForSecurityIssues} from './helpers';
 import {t} from './i18n';
 import {toast} from './toast';
 import {showModal} from './modal';
@@ -56,6 +56,7 @@ import {
     toggleFileMap,
     togglePaths,
     togglePdfToText,
+    toggleSecurityScan,
     toggleTrimEmpty,
     truncationWarning,
 } from './dom';
@@ -103,6 +104,7 @@ export function initMerge(): void {
     togglePdfToText.checked = localStorage.getItem('fmerge_togglePdfToText') !== 'false';
     toggleFileMap.checked = localStorage.getItem('fmerge_toggleFileMap') !== 'false';
     toggleCompress.checked = localStorage.getItem('fmerge_toggleCompress') === 'true';
+    toggleSecurityScan.checked = localStorage.getItem('fmerge_toggleSecurityScan') !== 'false';
     // Mutual exclusivity: if both are on, LLM format wins (it's the more advanced option)
     if (togglePaths.checked && toggleFileMap.checked) {
         togglePaths.checked = false;
@@ -118,6 +120,7 @@ export function initMerge(): void {
     toggleTrimEmpty.addEventListener('change', () => localStorage.setItem('fmerge_toggleTrimEmpty', String(toggleTrimEmpty.checked)));
     togglePdfToText.addEventListener('change', () => localStorage.setItem('fmerge_togglePdfToText', String(togglePdfToText.checked)));
     toggleCompress.addEventListener('change', () => localStorage.setItem('fmerge_toggleCompress', String(toggleCompress.checked)));
+    toggleSecurityScan.addEventListener('change', () => localStorage.setItem('fmerge_toggleSecurityScan', String(toggleSecurityScan.checked)));
     toggleFileMap.addEventListener('change', () => {
         localStorage.setItem('fmerge_toggleFileMap', String(toggleFileMap.checked));
         if (toggleFileMap.checked && togglePaths.checked) {
@@ -129,6 +132,58 @@ export function initMerge(): void {
     // Merge
     mergeBtn.addEventListener('click', async () => {
         if (!state.files.length) return;
+
+        // Security scan
+        if (toggleSecurityScan.checked) {
+            // Ensure lazy-loaded files have content
+            for (const f of state.files) {
+                if (f.content === null && f._file) {
+                    f.content = await readFile(f._file);
+                }
+            }
+            const findings = scanForSecurityIssues(state.files);
+            if (findings.length > 0) {
+                const tableRows = findings.map(f =>
+                    `<tr>
+                        <td title="${escapeHtml(f.file)}">${escapeHtml(f.file.split('/').pop() || f.file)}</td>
+                        <td>${f.line}</td>
+                        <td>${escapeHtml(f.type)}</td>
+                        <td>${escapeHtml(f.detail)}</td>
+                        <td class="security-match">${escapeHtml(f.matched)}</td>
+                    </tr>`
+                ).join('');
+
+                const bodyHtml = `
+                    <div class="security-warning-body">
+                        <p class="security-warning-intro">${t('securityWarningIntro')}</p>
+                        <p class="security-warning-count">${t('securityWarningCount', { count: findings.length })}</p>
+                        <div class="security-table-wrap">
+                            <table class="security-table">
+                                <thead>
+                                    <tr>
+                                        <th>${t('securityWarningFile')}</th>
+                                        <th>${t('securityWarningLine')}</th>
+                                        <th>${t('securityWarningType')}</th>
+                                        <th>${t('securityWarningDetail')}</th>
+                                        <th>${t('securityWarningMatch')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${tableRows}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                const proceed = await showModal({
+                    title: t('securityWarningTitle'),
+                    body: bodyHtml,
+                    confirmText: t('securityIgnoreAndMerge'),
+                    confirmClass: 'btn-danger',
+                    modalClass: 'modal--large',
+                });
+                if (!proceed) return;
+            }
+        }
 
         mergeBtn.disabled = true;
         mergeBtn.querySelector('[data-i18n]')!.textContent = t('loading');

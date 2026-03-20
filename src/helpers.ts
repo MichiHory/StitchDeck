@@ -166,6 +166,125 @@ function collapseEmptyLines(content: string): string {
     return content.replace(/\n{3,}/g, '\n\n');
 }
 
+export interface SecurityFinding {
+    file: string;
+    line: number;
+    type: string;
+    detail: string;
+    matched: string;
+}
+
+interface SecurityPattern {
+    name: string;
+    regex: RegExp;
+    detail: string;
+}
+
+const SECURITY_PATTERNS: SecurityPattern[] = [
+    // AWS
+    { name: 'AWS Access Key', regex: /\b(AKIA[0-9A-Z]{16})\b/, detail: 'AWS Access Key ID' },
+    { name: 'AWS Secret Key', regex: /(?:aws_secret_access_key|secret_access_key|aws_secret)\s*[:=]\s*['"]?([A-Za-z0-9/+=]{40})['"]?/i, detail: 'AWS Secret Access Key' },
+
+    // Google
+    { name: 'Google API Key', regex: /\bAIza[0-9A-Za-z_-]{35}\b/, detail: 'Google API Key' },
+    { name: 'Google OAuth', regex: /\b[0-9]+-[a-z0-9_]{32}\.apps\.googleusercontent\.com\b/, detail: 'Google OAuth Client ID' },
+
+    // GitHub
+    { name: 'GitHub Token', regex: /\b(ghp_[A-Za-z0-9_]{36}|gho_[A-Za-z0-9_]{36}|ghu_[A-Za-z0-9_]{36}|ghs_[A-Za-z0-9_]{36}|ghr_[A-Za-z0-9_]{36}|github_pat_[A-Za-z0-9_]{22,82})\b/, detail: 'GitHub Personal Access Token' },
+
+    // Stripe
+    { name: 'Stripe Key', regex: /\b(sk_live_[0-9a-zA-Z]{24,}|rk_live_[0-9a-zA-Z]{24,})\b/, detail: 'Stripe Secret/Restricted Key' },
+    { name: 'Stripe Publishable', regex: /\b(pk_live_[0-9a-zA-Z]{24,})\b/, detail: 'Stripe Live Publishable Key' },
+
+    // Slack
+    { name: 'Slack Token', regex: /\b(xox[bpsa]-[0-9]{10,}-[0-9]{10,}-[a-zA-Z0-9]{24,})\b/, detail: 'Slack Token' },
+    { name: 'Slack Webhook', regex: /hooks\.slack\.com\/services\/T[A-Z0-9]{8,}\/B[A-Z0-9]{8,}\/[a-zA-Z0-9]{24,}/, detail: 'Slack Webhook URL' },
+
+    // Private keys
+    { name: 'Private Key', regex: /-----BEGIN\s+(RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/, detail: 'Private Key (RSA/EC/DSA/SSH/PGP)' },
+
+    // JWT
+    { name: 'JWT Token', regex: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/, detail: 'JSON Web Token' },
+
+    // Generic API keys / secrets in assignments
+    { name: 'API Key Assignment', regex: /(?:api_key|apikey|api_secret|api_token)\s*[:=]\s*['"]([^'"]{8,})['"](?!\s*[:=]\s*$)/i, detail: 'API Key/Secret assignment' },
+    { name: 'Secret Assignment', regex: /(?:secret_key|secret_token|auth_token|access_token|bearer_token)\s*[:=]\s*['"]([^'"]{8,})['"](?!\s*[:=]\s*$)/i, detail: 'Secret/Auth Token assignment' },
+
+    // Password assignments
+    { name: 'Password', regex: /(?:password|passwd|pwd|pass)\s*[:=]\s*['"]([^'"]{4,})['"](?!\s*(?:prompt|input|field|label|placeholder|name|type|hint))/i, detail: 'Hardcoded password' },
+
+    // Connection strings with credentials
+    { name: 'Connection String', regex: /(?:mysql|postgres|postgresql|mongodb|redis|amqp|smtp|ftp):\/\/[^:]+:[^@]+@[^/\s]+/i, detail: 'Connection string with embedded credentials' },
+
+    // Database DSN
+    { name: 'Database DSN', regex: /(?:DB_PASSWORD|DATABASE_PASSWORD|MYSQL_PASSWORD|POSTGRES_PASSWORD|MONGO_PASSWORD)\s*[:=]\s*['"]?([^'"\s]{4,})['"]?/i, detail: 'Database password in config' },
+
+    // Twilio
+    { name: 'Twilio Key', regex: /\bSK[0-9a-fA-F]{32}\b/, detail: 'Twilio API Key' },
+
+    // SendGrid
+    { name: 'SendGrid Key', regex: /\bSG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}\b/, detail: 'SendGrid API Key' },
+
+    // Mailgun
+    { name: 'Mailgun Key', regex: /\bkey-[0-9a-zA-Z]{32}\b/, detail: 'Mailgun API Key' },
+
+    // Heroku
+    { name: 'Heroku Key', regex: /\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b(?=.*heroku)/i, detail: 'Heroku API Key' },
+
+    // NPM token
+    { name: 'NPM Token', regex: /\bnpm_[A-Za-z0-9]{36}\b/, detail: 'NPM Access Token' },
+
+    // PyPI token
+    { name: 'PyPI Token', regex: /\bpypi-[A-Za-z0-9_-]{50,}\b/, detail: 'PyPI API Token' },
+
+    // Generic high-entropy strings in env-like assignments
+    { name: 'Env Secret', regex: /(?:SECRET|TOKEN|PRIVATE|CREDENTIAL|AUTH)[\w]*\s*[:=]\s*['"]([A-Za-z0-9+/=_-]{20,})['"](?!\s*[:=]\s*$)/i, detail: 'Suspicious secret in environment variable' },
+
+    // Bearer tokens in code
+    { name: 'Bearer Token', regex: /['"]Bearer\s+[A-Za-z0-9_\-.]{20,}['"]/i, detail: 'Hardcoded Bearer token' },
+
+    // Basic auth header
+    { name: 'Basic Auth', regex: /['"]Basic\s+[A-Za-z0-9+/=]{10,}['"]/i, detail: 'Hardcoded Basic Auth header' },
+];
+
+/** Scan file content for potential security issues (secrets, keys, credentials). */
+export function scanForSecurityIssues(files: { path: string; content: string | null; isCustomText?: boolean; pdfData?: string }[]): SecurityFinding[] {
+    const findings: SecurityFinding[] = [];
+
+    for (const file of files) {
+        if (!file.content || file.pdfData) continue;
+
+        const lines = file.content.split('\n');
+        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+            const line = lines[lineIdx];
+            // Skip very long lines (likely minified/binary) and comment-only context
+            if (line.length > 2000) continue;
+
+            for (const pattern of SECURITY_PATTERNS) {
+                const match = line.match(pattern.regex);
+                if (match) {
+                    // Mask the matched secret for display
+                    const raw = match[1] || match[0];
+                    const masked = raw.length > 8
+                        ? raw.substring(0, 4) + '*'.repeat(Math.min(raw.length - 8, 20)) + raw.substring(raw.length - 4)
+                        : '****';
+
+                    findings.push({
+                        file: file.path,
+                        line: lineIdx + 1,
+                        type: pattern.name,
+                        detail: pattern.detail,
+                        matched: masked,
+                    });
+                    break; // one finding per line is enough
+                }
+            }
+        }
+    }
+
+    return findings;
+}
+
 export function getLanguage(filename: string): string {
     const ext = filename.split('.').pop()!.toLowerCase();
     if (['js', 'jsx', 'mjs', 'cjs'].includes(ext)) return 'javascript';
