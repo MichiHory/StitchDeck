@@ -28,3 +28,4 @@ export const langSwitcher = document.getElementById('langSwitcher')!;
 export const viewToggle = document.getElementById('viewToggle')!;
 export const viewListBtn = document.getElementById('viewListBtn')! as HTMLButtonElement;
 export const viewTilesBtn = document.getElementById('viewTilesBtn')! as HTMLButtonElement;
+export const addCustomTextBtn = document.getElementById('addCustomTextBtn')! as HTMLButtonElement;

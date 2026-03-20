@@ -73,6 +73,26 @@ export function initMerge(): void {
             for (let i = 0; i < state.files.length; i++) {
                 const entry = state.files[i];
 
+                // Custom text entries — treat like .md files
+                if (entry.isCustomText) {
+                    let contentStr = entry.content || '';
+                    if (trimEmpty) {
+                        contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
+                    }
+                    if (entry.includeTitle && entry.customTitle) {
+                        plainLinesArray.push(`${entry.customTitle}:`);
+                        htmlLinesArray.push(`<span style="color: #a78bfa; font-weight: 700;">${escapeHtml(entry.customTitle)}:</span>`);
+                    }
+                    const plainContentLines = contentStr.split('\n');
+                    plainLinesArray.push(...plainContentLines);
+                    htmlLinesArray.push(...plainContentLines.map(l => escapeHtml(l)));
+                    if (i < state.files.length - 1) {
+                        plainLinesArray.push('');
+                        htmlLinesArray.push('');
+                    }
+                    continue;
+                }
+
                 if (entry.pdfData) {
                     if (pdfToText) {
                         let contentStr = await extractPdfText(entry.pdfData);
@@ -276,7 +296,11 @@ export function initMerge(): void {
                     }
 
                     const allLines: string[] = [];
-                    if (includePaths) {
+                    if (entry.isCustomText) {
+                        if (entry.includeTitle && entry.customTitle) {
+                            allLines.push(entry.customTitle + ':');
+                        }
+                    } else if (includePaths) {
                         allLines.push(entry.path + ':');
                     }
 

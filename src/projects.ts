@@ -29,6 +29,11 @@ export async function persistCurrentProject(): Promise<void> {
     project.files = state.files.map(f => {
         const obj: FileEntry = { name: f.name, path: f.path, content: f.content, size: f.size };
         if (f.pdfData) obj.pdfData = f.pdfData;
+        if (f.isCustomText) {
+            obj.isCustomText = true;
+            obj.customTitle = f.customTitle;
+            obj.includeTitle = f.includeTitle;
+        }
         return obj;
     });
     await saveProject(project);
@@ -42,6 +47,11 @@ export async function switchToProject(id: string): Promise<void> {
     state.files = (project.files || []).map(f => {
         const obj: FileEntry = { name: f.name, path: f.path, content: f.content, size: f.size };
         if (f.pdfData) obj.pdfData = f.pdfData;
+        if (f.isCustomText) {
+            obj.isCustomText = true;
+            obj.customTitle = f.customTitle;
+            obj.includeTitle = f.includeTitle;
+        }
         return obj;
     });
     state.fullMergedContent = '';

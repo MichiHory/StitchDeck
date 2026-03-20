@@ -9,6 +9,9 @@ export interface FileEntry {
     size: number;
     pdfData?: string;
     _file?: File;
+    isCustomText?: boolean;
+    customTitle?: string;
+    includeTitle?: boolean;
 }
 
 export interface Project {

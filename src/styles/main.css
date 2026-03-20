@@ -383,6 +383,7 @@ body {
     display: flex;
     align-items: center;
     margin-bottom: .6rem;
+    gap: .5rem;
 }
 .view-toggle {
     display: flex;
@@ -1080,6 +1081,11 @@ body {
     flex: 1;
     margin-bottom: 0;
 }
+.modal-form-row-inline {
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+}
 .modal-select {
     padding: .6rem .85rem;
     background: var(--surface-2);
@@ -1190,6 +1196,136 @@ html.light .line-numbers {
 
 html.light .burst-particle {
     filter: brightness(0.8);
+}
+
+/* Light mode: custom text — darker purple for visibility */
+html.light .custom-text-entry {
+    --ct-color: #7c3aed;
+    --ct-dim: rgba(124, 58, 237, 0.08);
+    --ct-border: rgba(124, 58, 237, 0.3);
+    --ct-glow: rgba(124, 58, 237, 0.15);
+}
+html.light .custom-text-entry:hover {
+    background: rgba(124, 58, 237, 0.12);
+}
+html.light .custom-text-icon:hover {
+    background: rgba(124, 58, 237, 0.2) !important;
+    color: #6d28d9 !important;
+    border-color: rgba(124, 58, 237, 0.5) !important;
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.2);
+}
+html.light .btn-add-text {
+    background: rgba(124, 58, 237, 0.08);
+    border-color: rgba(124, 58, 237, 0.3);
+    color: #7c3aed;
+}
+html.light .btn-add-text:hover {
+    background: rgba(124, 58, 237, 0.15);
+    color: #6d28d9;
+    border-color: rgba(124, 58, 237, 0.45);
+    box-shadow: 0 0 12px rgba(124, 58, 237, 0.15);
+}
+
+/* ── Add Custom Text Button ── */
+.btn-add-text {
+    background: var(--ct-dim, rgba(167, 139, 250, 0.08));
+    border: 1px solid var(--ct-border, rgba(167, 139, 250, 0.25));
+    color: var(--ct-color, #a78bfa);
+    padding: 5px 12px;
+    font-size: .75rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    border-radius: var(--radius-xs);
+    margin-left: auto;
+}
+.btn-add-text:hover {
+    background: rgba(167, 139, 250, 0.15);
+    color: #c4b5fd;
+    border-color: rgba(167, 139, 250, 0.4);
+    box-shadow: 0 0 12px rgba(167, 139, 250, 0.15);
+}
+
+/* ── Custom Text Entries ── */
+.custom-text-entry {
+    --ct-color: #a78bfa;
+    --ct-dim: rgba(167, 139, 250, 0.08);
+    --ct-border: rgba(167, 139, 250, 0.25);
+    --ct-glow: rgba(167, 139, 250, 0.15);
+    border-color: var(--ct-border);
+    background: var(--ct-dim);
+}
+.custom-text-entry:hover {
+    border-color: var(--ct-color);
+    background: rgba(167, 139, 250, 0.12);
+}
+.custom-text-entry.drag-over-item {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    box-shadow: 0 0 16px var(--accent-glow);
+}
+.custom-text-icon {
+    background: var(--ct-dim) !important;
+    color: var(--ct-color) !important;
+    border: 1px solid var(--ct-border) !important;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: var(--radius-xs);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+.custom-text-icon:hover {
+    background: rgba(167, 139, 250, 0.2) !important;
+    color: #c4b5fd !important;
+    border-color: rgba(167, 139, 250, 0.5) !important;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.2);
+    transform: scale(1.1);
+}
+.custom-text-preview {
+    color: var(--text-dim) !important;
+    font-style: italic;
+}
+.file-tile.custom-text-entry .tile-name,
+.file-item.custom-text-entry .file-name {
+    color: var(--ct-color);
+}
+
+/* ── Modal Large ── */
+.modal--large {
+    max-width: 620px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* ── Modal Error ── */
+.modal-error {
+    color: var(--danger);
+    font-size: .8rem;
+    font-weight: 500;
+    padding: .4rem .75rem;
+    margin-bottom: .5rem;
+    background: var(--danger-dim);
+    border: 1px solid var(--danger-border);
+    border-radius: var(--radius-xs);
+}
+
+/* ── Modal Textarea ── */
+.modal-textarea {
+    resize: vertical;
+    min-height: 180px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82rem;
+    line-height: 1.6;
+}
+.modal-toggle-option {
+    margin-top: .25rem;
 }
 
 /* ── Responsive ── */
