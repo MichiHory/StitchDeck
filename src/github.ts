@@ -44,35 +44,101 @@ async function apiFetch(url: string, token?: string): Promise<Response> {
 
 function parseGitignore(content: string): string[] {
     return content.split('\n')
-        .map(l => l.trim())
-        .filter(l => l && !l.startsWith('#'));
+        .map(l => {
+            // Strip trailing whitespace unless escaped with backslash
+            let line = l.replace(/(?<!\\)\s+$/, '');
+            // Unescape escaped trailing spaces
+            line = line.replace(/\\ /g, ' ');
+            return line;
+        })
+        .filter(l => l && !l.startsWith('#'))
+        .map(l => {
+            // Handle escaped # and ! at start
+            if (l.startsWith('\\#') || l.startsWith('\\!')) return l.slice(1);
+            return l;
+        });
 }
 
 function patternToRegex(pattern: string): RegExp {
-    const negated = pattern.startsWith('!');
-    if (negated) pattern = pattern.slice(1);
-
     let anchored = false;
     if (pattern.startsWith('/')) {
         anchored = true;
         pattern = pattern.slice(1);
     }
 
+    // Patterns containing a slash (other than trailing) are anchored
+    const patternBody = pattern.endsWith('/') ? pattern.slice(0, -1) : pattern;
+    if (!anchored && patternBody.includes('/')) {
+        anchored = true;
+    }
+
     const isDir = pattern.endsWith('/');
     if (isDir) pattern = pattern.slice(0, -1);
 
-    // Escape regex special chars except * and ?
-    let regex = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-    // Handle **/ (match any directory depth)
-    regex = regex.replace(/\*\*\//g, '(?:.+/)?');
-    // Handle /** (match everything inside)
-    regex = regex.replace(/\/\*\*/g, '(?:/.*)?');
-    // Handle ** in the middle
-    regex = regex.replace(/\*\*/g, '.*');
-    // Handle single *
-    regex = regex.replace(/(?<!\.\*)\*/g, '[^/]*');
-    // Handle ?
-    regex = regex.replace(/\?/g, '[^/]');
+    // Process pattern character by character to handle escapes and char classes
+    let regex = '';
+    let i = 0;
+    while (i < pattern.length) {
+        const ch = pattern[i];
+
+        if (ch === '\\' && i + 1 < pattern.length) {
+            // Escaped character — emit literal
+            regex += '\\' + pattern[i + 1];
+            i += 2;
+            continue;
+        }
+
+        if (ch === '[') {
+            // Character class — pass through until closing ]
+            const start = i;
+            i++; // skip [
+            // Handle negation and literal ] at start: [!...] or []...] or [!]...]
+            if (i < pattern.length && (pattern[i] === '!' || pattern[i] === '^')) i++;
+            if (i < pattern.length && pattern[i] === ']') i++;
+            while (i < pattern.length && pattern[i] !== ']') i++;
+            if (i < pattern.length) i++; // skip closing ]
+            regex += pattern.slice(start, i);
+            continue;
+        }
+
+        if (ch === '*') {
+            if (pattern[i + 1] === '*') {
+                if (pattern[i + 2] === '/') {
+                    // **/ — match any directory depth (including zero)
+                    regex += '(?:.+/)?';
+                    i += 3;
+                } else if (i > 0 && pattern[i - 1] === '/') {
+                    // /** at end — match everything inside
+                    // (the / was already emitted, so just match the rest)
+                    regex += '.*';
+                    i += 2;
+                } else {
+                    // ** standalone — match anything including /
+                    regex += '.*';
+                    i += 2;
+                }
+            } else {
+                // Single * — match anything except /
+                regex += '[^/]*';
+                i++;
+            }
+            continue;
+        }
+
+        if (ch === '?') {
+            regex += '[^/]';
+            i++;
+            continue;
+        }
+
+        // Escape regex special chars
+        if ('.+^${}()|'.includes(ch)) {
+            regex += '\\' + ch;
+        } else {
+            regex += ch;
+        }
+        i++;
+    }
 
     if (anchored) {
         regex = '^' + regex;
@@ -81,8 +147,10 @@ function patternToRegex(pattern: string): RegExp {
     }
 
     if (isDir) {
+        // Directory-only: must match a directory
         regex += '(?:/|$)';
     } else {
+        // Can match file or directory
         regex += '(?:/|$)';
     }
 
@@ -168,7 +236,19 @@ async function fetchGitignorePatterns(owner: string, repo: string, branch: strin
             const dir = gi.path === '.gitignore' ? '' : gi.path.replace(/\.gitignore$/, '');
             const patterns = parseGitignore(content);
             for (const p of patterns) {
-                allPatterns.push(dir ? dir + p : p);
+                if (!dir) {
+                    allPatterns.push(p);
+                    continue;
+                }
+                // Subdirectory .gitignore: prefix patterns with directory path
+                const negated = p.startsWith('!');
+                let raw = negated ? p.slice(1) : p;
+                // Anchored patterns (starting with /) are relative to their .gitignore location
+                if (raw.startsWith('/')) {
+                    raw = raw.slice(1);
+                }
+                const prefixed = '/' + dir + raw;
+                allPatterns.push(negated ? '!' + prefixed : prefixed);
             }
         } catch { /* skip unreadable gitignore */ }
     }

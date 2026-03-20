@@ -135,7 +135,7 @@ Utilita pro slučování souborů pro LLM. utilita umí:
   - Kaskádní zaškrtávání rodič/potomek a indeterminate stav
 * .gitignore podpora
   - Parsuje všechny .gitignore soubory v repozitáři a respektuje jejich pravidla
-  - Podporuje `**`, `*`, `?`, `/` anchoring, directory-only patterny (trailing `/`), negaci (`!`)
+  - Podporuje `**`, `*`, `?`, `/` anchoring, directory-only patterny (trailing `/`), negaci (`!`), character classes (`[abc]`), escaped znaky (`\#`, `\!`, `\ `), automatický anchoring patternů obsahujících `/`
   - Custom excludes se aplikují nad rámec .gitignore pravidel
 * Automatické přeskakování binárních souborů (obrázky, fonty, archivy, spustitelné soubory atd.)
 * Modální dialog má tři tlačítka: Cancel, Save (uloží bez synchronizace), Save & sync / Connect & sync (uloží a provede sync)
