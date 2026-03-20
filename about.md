@@ -76,6 +76,7 @@ Utilita pro slučování souborů. utilita umí:
   - Oříznutí prázdných řádků na začátku a konci obsahu každého souboru (defaultně vypnutý)
   - LLM-optimalizovaný formát (defaultně zapnutý) — přidá `<file_map>` s číslovaným seznamem souborů na začátek a obalí obsah každého souboru do `<file path="...">...</file>` XML tagů (inspirováno Repomix formátem, optimální pro Claude, GPT i Gemini)
   - Přepínače „Include file paths" a „LLM-optimized format" se vzájemně vylučují — zapnutí jednoho automaticky vypne druhý; při inicializaci má přednost LLM formát
+  - Komprese exportu pro LLM (defaultně vypnutý) — odstraní komentáře (řádkové i blokové pro C-style, hash, HTML a SQL jazyky), zkolabuje po sobě jdoucí prázdné řádky, zredukuje odsazení (4 mezery→2, taby→2 mezery, kromě Pythonu), ořízne trailing whitespace; markdown a plaintext se pouze kolabují prázdné řádky (komentáře jsou obsah)
   - Převod PDF dokumentů na text — zobrazí se jen pokud je v seznamu alespoň jeden PDF soubor (defaultně zapnutý)
 * Zobrazení sloučeného výstupu
   - Číslování řádků (čísla nejsou součástí textu — nejdou kopírovat, nejsou v selekci)
@@ -243,6 +244,7 @@ Utilita pro slučování souborů. utilita umí:
   - `fmerge_togglePaths` — vkládání cest do výstupu
   - `fmerge_toggleTrimEmpty` — ořezávání prázdných řádků
   - `fmerge_togglePdfToText` — extrakce textu z PDF
+  - `fmerge_toggleCompress` — komprese exportu pro LLM
   - `fmerge_toggleFileMap` — vložení mapy souborů na začátek
   - `fmerge_lang` — jazyk (en/cs)
   - `fmerge_theme` — téma (dark/light)

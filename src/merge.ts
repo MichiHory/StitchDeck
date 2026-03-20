@@ -11,7 +11,7 @@ import javascript from 'highlight.js/lib/languages/javascript';
 import blade from 'highlight.js/lib/languages/php-template';
 
 import {MAX_DISPLAY_LINES, state} from './state';
-import {cleanPath, countTokens, escapeHtml, formatSize, formatTokens, getLanguage} from './helpers';
+import {cleanPath, compressForLLM, countTokens, escapeHtml, formatSize, formatTokens, getLanguage} from './helpers';
 import {t} from './i18n';
 import {toast} from './toast';
 import {showModal} from './modal';
@@ -28,6 +28,7 @@ import {
     outputContent,
     outputMeta,
     outputSection,
+    toggleCompress,
     toggleFileMap,
     togglePaths,
     togglePdfToText,
@@ -53,6 +54,7 @@ export function initMerge(): void {
     toggleTrimEmpty.checked = localStorage.getItem('fmerge_toggleTrimEmpty') === 'true';
     togglePdfToText.checked = localStorage.getItem('fmerge_togglePdfToText') !== 'false';
     toggleFileMap.checked = localStorage.getItem('fmerge_toggleFileMap') !== 'false';
+    toggleCompress.checked = localStorage.getItem('fmerge_toggleCompress') === 'true';
     // Mutual exclusivity: if both are on, LLM format wins (it's the more advanced option)
     if (togglePaths.checked && toggleFileMap.checked) {
         togglePaths.checked = false;
@@ -67,6 +69,7 @@ export function initMerge(): void {
     });
     toggleTrimEmpty.addEventListener('change', () => localStorage.setItem('fmerge_toggleTrimEmpty', String(toggleTrimEmpty.checked)));
     togglePdfToText.addEventListener('change', () => localStorage.setItem('fmerge_togglePdfToText', String(togglePdfToText.checked)));
+    toggleCompress.addEventListener('change', () => localStorage.setItem('fmerge_toggleCompress', String(toggleCompress.checked)));
     toggleFileMap.addEventListener('change', () => {
         localStorage.setItem('fmerge_toggleFileMap', String(toggleFileMap.checked));
         if (toggleFileMap.checked && togglePaths.checked) {
@@ -90,6 +93,7 @@ export function initMerge(): void {
             const trimEmpty = toggleTrimEmpty.checked;
             const pdfToText = togglePdfToText.checked;
             const includeFileMap = toggleFileMap.checked;
+            const compress = toggleCompress.checked;
 
             const xmlTagStyle = 'color: #38bdf8; font-weight: 700;';
 
@@ -118,6 +122,9 @@ export function initMerge(): void {
                 // Custom text entries — treat like .md files
                 if (entry.isCustomText) {
                     let contentStr = entry.content || '';
+                    if (compress) {
+                        contentStr = compressForLLM(contentStr, entry.customTitle ? `${entry.customTitle}.md` : 'text.md');
+                    }
                     if (trimEmpty) {
                         contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
                     }
@@ -151,6 +158,9 @@ export function initMerge(): void {
                     let contentStr: string;
                     if (pdfToText) {
                         contentStr = await extractPdfText(entry.pdfData);
+                        if (compress) {
+                            contentStr = compressForLLM(contentStr, entry.path);
+                        }
                         if (trimEmpty) {
                             contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
                         }
@@ -190,6 +200,9 @@ export function initMerge(): void {
                 let contentStr = entry.content || '';
                 const lang = getLanguage(entry.path);
 
+                if (compress) {
+                    contentStr = compressForLLM(contentStr, entry.path);
+                }
                 if (trimEmpty) {
                     contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
                 }

@@ -23,6 +23,7 @@ export const toggleTrimEmpty = document.getElementById('toggleTrimEmpty')! as HT
 export const downloadPdfBtn = document.getElementById('downloadPdfBtn')! as HTMLButtonElement;
 export const togglePdfToText = document.getElementById('togglePdfToText')! as HTMLInputElement;
 export const toggleFileMap = document.getElementById('toggleFileMap')! as HTMLInputElement;
+export const toggleCompress = document.getElementById('toggleCompress')! as HTMLInputElement;
 export const togglePdfToTextLabel = document.getElementById('togglePdfToTextLabel')!;
 export const pathCapture = document.getElementById('pathCapture')! as HTMLTextAreaElement;
 export const langSwitcher = document.getElementById('langSwitcher')!;
