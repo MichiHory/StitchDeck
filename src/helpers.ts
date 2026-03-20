@@ -25,7 +25,7 @@ export function formatTokens(count: number): string {
 
 export function cleanPath(rawPath: string): string {
     if (!rawPath) return '';
-    let p = rawPath.replace(/^file:\/\/\/?/, '');
+    let p = rawPath.replace(/^file:\/{1,3}/, '');
     try { p = decodeURIComponent(p); } catch (_e) { /* ignore */ }
     return p.trim();
 }

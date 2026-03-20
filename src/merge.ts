@@ -11,7 +11,7 @@ import javascript from 'highlight.js/lib/languages/javascript';
 import blade from 'highlight.js/lib/languages/php-template';
 
 import {MAX_DISPLAY_LINES, state} from './state';
-import {countTokens, escapeHtml, formatSize, formatTokens, getLanguage} from './helpers';
+import {cleanPath, countTokens, escapeHtml, formatSize, formatTokens, getLanguage} from './helpers';
 import {t} from './i18n';
 import {toast} from './toast';
 import {showModal} from './modal';
@@ -28,6 +28,7 @@ import {
     outputContent,
     outputMeta,
     outputSection,
+    toggleFileMap,
     togglePaths,
     togglePdfToText,
     toggleTrimEmpty,
@@ -51,9 +52,28 @@ export function initMerge(): void {
     togglePaths.checked = localStorage.getItem('fmerge_togglePaths') !== 'false';
     toggleTrimEmpty.checked = localStorage.getItem('fmerge_toggleTrimEmpty') === 'true';
     togglePdfToText.checked = localStorage.getItem('fmerge_togglePdfToText') !== 'false';
-    togglePaths.addEventListener('change', () => localStorage.setItem('fmerge_togglePaths', String(togglePaths.checked)));
+    toggleFileMap.checked = localStorage.getItem('fmerge_toggleFileMap') !== 'false';
+    // Mutual exclusivity: if both are on, LLM format wins (it's the more advanced option)
+    if (togglePaths.checked && toggleFileMap.checked) {
+        togglePaths.checked = false;
+        localStorage.setItem('fmerge_togglePaths', 'false');
+    }
+    togglePaths.addEventListener('change', () => {
+        localStorage.setItem('fmerge_togglePaths', String(togglePaths.checked));
+        if (togglePaths.checked && toggleFileMap.checked) {
+            toggleFileMap.checked = false;
+            localStorage.setItem('fmerge_toggleFileMap', 'false');
+        }
+    });
     toggleTrimEmpty.addEventListener('change', () => localStorage.setItem('fmerge_toggleTrimEmpty', String(toggleTrimEmpty.checked)));
     togglePdfToText.addEventListener('change', () => localStorage.setItem('fmerge_togglePdfToText', String(togglePdfToText.checked)));
+    toggleFileMap.addEventListener('change', () => {
+        localStorage.setItem('fmerge_toggleFileMap', String(toggleFileMap.checked));
+        if (toggleFileMap.checked && togglePaths.checked) {
+            togglePaths.checked = false;
+            localStorage.setItem('fmerge_togglePaths', 'false');
+        }
+    });
 
     // Merge
     mergeBtn.addEventListener('click', async () => {
@@ -69,6 +89,28 @@ export function initMerge(): void {
             const includePaths = togglePaths.checked;
             const trimEmpty = toggleTrimEmpty.checked;
             const pdfToText = togglePdfToText.checked;
+            const includeFileMap = toggleFileMap.checked;
+
+            const xmlTagStyle = 'color: #38bdf8; font-weight: 700;';
+
+            // Generate file map
+            if (includeFileMap) {
+                plainLinesArray.push('<file_map>');
+                htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;file_map&gt;</span>`);
+                for (let i = 0; i < state.files.length; i++) {
+                    const entry = state.files[i];
+                    const label = entry.isCustomText
+                        ? (entry.includeTitle && entry.customTitle ? `[text: ${entry.customTitle}]` : '[text]')
+                        : cleanPath(entry.path);
+                    const line = `${i + 1}. ${label}`;
+                    plainLinesArray.push(line);
+                    htmlLinesArray.push(`<span style="color: #38bdf8;">${escapeHtml(line)}</span>`);
+                }
+                plainLinesArray.push('</file_map>');
+                htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;/file_map&gt;</span>`);
+                plainLinesArray.push('');
+                htmlLinesArray.push('');
+            }
 
             for (let i = 0; i < state.files.length; i++) {
                 const entry = state.files[i];
@@ -79,13 +121,25 @@ export function initMerge(): void {
                     if (trimEmpty) {
                         contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
                     }
-                    if (entry.includeTitle && entry.customTitle) {
+
+                    if (includeFileMap) {
+                        const titleAttr = entry.includeTitle && entry.customTitle ? ` title="${entry.customTitle}"` : '';
+                        const titleAttrHtml = entry.includeTitle && entry.customTitle ? ` title="${escapeHtml(entry.customTitle)}"` : '';
+                        plainLinesArray.push(`<file type="text"${titleAttr}>`);
+                        htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;file type="text"${titleAttrHtml}&gt;</span>`);
+                    } else if (entry.includeTitle && entry.customTitle) {
                         plainLinesArray.push(`${entry.customTitle}:`);
                         htmlLinesArray.push(`<span style="color: #a78bfa; font-weight: 700;">${escapeHtml(entry.customTitle)}:</span>`);
                     }
+
                     const plainContentLines = contentStr.split('\n');
                     plainLinesArray.push(...plainContentLines);
                     htmlLinesArray.push(...plainContentLines.map(l => escapeHtml(l)));
+
+                    if (includeFileMap) {
+                        plainLinesArray.push('</file>');
+                        htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;/file&gt;</span>`);
+                    }
                     if (i < state.files.length - 1) {
                         plainLinesArray.push('');
                         htmlLinesArray.push('');
@@ -94,26 +148,37 @@ export function initMerge(): void {
                 }
 
                 if (entry.pdfData) {
+                    let contentStr: string;
                     if (pdfToText) {
-                        let contentStr = await extractPdfText(entry.pdfData);
+                        contentStr = await extractPdfText(entry.pdfData);
                         if (trimEmpty) {
                             contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
                         }
-                        if (includePaths) {
-                            plainLinesArray.push(`${entry.path}:`);
-                            htmlLinesArray.push(`<span style="color: #27db0f; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
-                        }
+                    } else {
+                        contentStr = `[PDF \u2013 ${t('pdfBinaryContent')}]`;
+                    }
+
+                    if (includeFileMap) {
+                        const p = cleanPath(entry.path);
+                        plainLinesArray.push(`<file path="${p}">`);
+                        htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;file path="${escapeHtml(p)}"&gt;</span>`);
+                    } else if (includePaths) {
+                        plainLinesArray.push(`${entry.path}:`);
+                        htmlLinesArray.push(`<span style="color: #27db0f; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
+                    }
+
+                    if (pdfToText) {
                         const lines = contentStr.split('\n');
                         plainLinesArray.push(...lines);
                         htmlLinesArray.push(...lines.map(l => escapeHtml(l)));
                     } else {
-                        if (includePaths) {
-                            plainLinesArray.push(`${entry.path}:`);
-                            htmlLinesArray.push(`<span style="color: #27db0f; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
-                        }
-                        const placeholder = `[PDF \u2013 ${t('pdfBinaryContent')}]`;
-                        plainLinesArray.push(placeholder);
-                        htmlLinesArray.push(`<span style="color: var(--text-dim); font-style: italic;">${escapeHtml(placeholder)}</span>`);
+                        plainLinesArray.push(contentStr);
+                        htmlLinesArray.push(`<span style="color: var(--text-dim); font-style: italic;">${escapeHtml(contentStr)}</span>`);
+                    }
+
+                    if (includeFileMap) {
+                        plainLinesArray.push('</file>');
+                        htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;/file&gt;</span>`);
                     }
                     if (i < state.files.length - 1) {
                         plainLinesArray.push('');
@@ -129,16 +194,17 @@ export function initMerge(): void {
                     contentStr = contentStr.replace(/^\n+/, '').replace(/\n+$/, '');
                 }
 
-                if (includePaths) {
+                if (includeFileMap) {
+                    const p = cleanPath(entry.path);
+                    plainLinesArray.push(`<file path="${p}">`);
+                    htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;file path="${escapeHtml(p)}"&gt;</span>`);
+                } else if (includePaths) {
                     plainLinesArray.push(`${entry.path}:`);
+                    htmlLinesArray.push(`<span style="color: #27db0f; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
                 }
+
                 const plainContentLines = contentStr.split('\n');
                 plainLinesArray.push(...plainContentLines);
-
-                if (includePaths) {
-                    const pathLineHtml = `<span style="color: #27db0f; font-weight: 700;">${escapeHtml(entry.path)}:</span>`;
-                    htmlLinesArray.push(pathLineHtml);
-                }
 
                 let highlightedContent = '';
                 if (lang !== 'plaintext' && hljs.getLanguage(lang)) {
@@ -149,6 +215,11 @@ export function initMerge(): void {
 
                 const highlightedContentLines = highlightedContent.split('\n');
                 htmlLinesArray.push(...highlightedContentLines);
+
+                if (includeFileMap) {
+                    plainLinesArray.push('</file>');
+                    htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;/file&gt;</span>`);
+                }
 
                 if (i < state.files.length - 1) {
                     plainLinesArray.push('');
