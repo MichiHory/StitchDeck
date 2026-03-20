@@ -232,6 +232,7 @@ export async function syncFromGitHub(config: GitHubConfig, progressCallback?: (m
                         path: item.path,
                         content,
                         size: item.size || new Blob([content]).size,
+                        source: 'github',
                     } as FileEntry;
                 } catch {
                     fetched++;
@@ -625,9 +626,22 @@ async function performSync(config: GitHubConfig): Promise<void> {
             progressEl.textContent = msg;
         });
 
-        // Replace all non-custom-text files with GitHub files
-        const customTexts = state.files.filter(f => f.isCustomText);
-        state.files = [...files, ...customTexts];
+        // Preserve manually added files and custom texts at their positions
+        const preserved: { file: FileEntry, index: number }[] = [];
+        state.files.forEach((f, i) => {
+            if (f.isCustomText || f.source === 'manual') {
+                preserved.push({ file: f, index: i });
+            }
+        });
+
+        // Build new array: start with github files, then re-insert preserved at original positions
+        const result: FileEntry[] = [...files];
+        preserved.sort((a, b) => a.index - b.index);
+        for (const entry of preserved) {
+            const targetIndex = Math.min(entry.index, result.length);
+            result.splice(targetIndex, 0, entry.file);
+        }
+        state.files = result;
 
         // Save GitHub config to project
         const project = await getProject(state.currentProjectId);
@@ -636,6 +650,7 @@ async function performSync(config: GitHubConfig): Promise<void> {
             project.files = state.files.map(f => {
                 const obj: FileEntry = { name: f.name, path: f.path, content: f.content, size: f.size };
                 if (f.pdfData) obj.pdfData = f.pdfData;
+                if (f.source) obj.source = f.source;
                 if (f.isCustomText) {
                     obj.isCustomText = true;
                     obj.customTitle = f.customTitle;

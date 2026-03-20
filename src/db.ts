@@ -12,6 +12,7 @@ export interface FileEntry {
     isCustomText?: boolean;
     customTitle?: string;
     includeTitle?: boolean;
+    source?: 'github' | 'manual';
 }
 
 export interface GitHubConfig {

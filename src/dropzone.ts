@@ -65,7 +65,7 @@ async function handleFilesWithPaths(fileList: FileList, capturedPaths: string[])
             content = await readFile(f);
         }
         const existingIndex = state.files.findIndex(entry => entry.path === path);
-        const fileEntry: FileEntry = { name: f.name, path, content, size: f.size };
+        const fileEntry: FileEntry = { name: f.name, path, content, size: f.size, source: 'manual' };
         if (pdfData) fileEntry.pdfData = pdfData;
         if (existingIndex !== -1) {
             state.files[existingIndex] = fileEntry;
