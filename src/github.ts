@@ -4,9 +4,9 @@ import { getProject, saveProject } from './db';
 import { t } from './i18n';
 import { toast } from './toast';
 import { showModal } from './modal';
-import { escapeHtml } from './helpers';
+import { escapeHtml, getExtColor } from './helpers';
 import { renderFileList } from './file-list';
-import { scheduleSave, renderProjectList } from './projects';
+import { scheduleSave, renderProjectList, updateGitHubStatus } from './projects';
 
 /* ── GitHub API helpers ── */
 
@@ -124,7 +124,7 @@ export async function fetchBranches(owner: string, repo: string, token?: string)
     return branches.map(b => b.name);
 }
 
-async function fetchTree(owner: string, repo: string, branch: string, token?: string): Promise<GitHubTreeItem[]> {
+async function fetchFullTree(owner: string, repo: string, branch: string, token?: string): Promise<GitHubTreeItem[]> {
     const res = await apiFetch(
         `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
         token
@@ -133,7 +133,22 @@ async function fetchTree(owner: string, repo: string, branch: string, token?: st
     if (data.truncated) {
         toast(t('ghTreeTruncated'));
     }
-    return (data.tree as GitHubTreeItem[]).filter(item => item.type === 'blob');
+    return data.tree as GitHubTreeItem[];
+}
+
+async function fetchTree(owner: string, repo: string, branch: string, token?: string): Promise<GitHubTreeItem[]> {
+    const tree = await fetchFullTree(owner, repo, branch, token);
+    return tree.filter(item => item.type === 'blob');
+}
+
+export interface TreeEntry {
+    path: string;
+    type: 'blob' | 'tree';
+}
+
+export async function fetchTreeEntries(owner: string, repo: string, branch: string, token?: string): Promise<TreeEntry[]> {
+    const tree = await fetchFullTree(owner, repo, branch, token);
+    return tree.map(item => ({ path: item.path, type: item.type }));
 }
 
 async function fetchFileContent(owner: string, repo: string, path: string, branch: string, token?: string): Promise<string> {
@@ -246,10 +261,12 @@ export function parseRepoInput(input: string): { owner: string; repo: string } |
 
 /* ── GitHub settings modal ── */
 
+let _currentExcludes: string[] = [];
+
 export async function showGitHubModal(existingConfig?: GitHubConfig): Promise<void> {
     const repoValue = existingConfig ? `${existingConfig.owner}/${existingConfig.repo}` : '';
     const tokenValue = existingConfig?.token || '';
-    const excludesValue = existingConfig?.customExcludes?.join('\n') || '';
+    _currentExcludes = existingConfig?.customExcludes || [];
     const branchValue = existingConfig?.branch || '';
 
     const result = await showModal({
@@ -277,34 +294,65 @@ export async function showGitHubModal(existingConfig?: GitHubConfig): Promise<vo
             <div class="gh-branch-list" data-role="gh-branch-list" style="display:none"></div>
             <div class="modal-form-group">
                 <label>${escapeHtml(t('ghExcludes'))}</label>
-                <textarea class="modal-input modal-textarea modal-textarea--sm" data-role="gh-excludes" rows="4" placeholder="${escapeHtml(t('ghExcludesPlaceholder'))}">${escapeHtml(excludesValue)}</textarea>
+                <button class="btn btn-secondary btn-sm gh-load-folders" data-role="gh-load-folders" type="button">${escapeHtml(t('ghLoadFolders'))}</button>
+                <div class="gh-folder-tree" data-role="gh-folder-tree" style="display:none"></div>
                 <span class="modal-hint">${escapeHtml(t('ghExcludesHint'))}</span>
             </div>
         `,
         confirmText: existingConfig ? t('ghSync') : t('ghConnect'),
         confirmClass: 'btn-primary',
+        secondaryConfirmText: existingConfig ? t('save') : '',
+        secondaryConfirmClass: 'btn-secondary',
         validate: (overlay) => {
             const repoInput = (overlay.querySelector('[data-role="gh-repo"]') as HTMLInputElement).value;
             if (!parseRepoInput(repoInput)) return t('ghInvalidRepo');
             return null;
         },
         resolveData: (overlay) => {
-            const repoInput = (overlay.querySelector('[data-role="gh-repo"]') as HTMLInputElement).value;
-            const token = (overlay.querySelector('[data-role="gh-token"]') as HTMLInputElement).value.trim();
-            const branch = (overlay.querySelector('[data-role="gh-branch"]') as HTMLInputElement).value.trim() || 'main';
-            const excludesText = (overlay.querySelector('[data-role="gh-excludes"]') as HTMLTextAreaElement).value;
-            const customExcludes = excludesText.split('\n').map(l => l.trim()).filter(Boolean);
-            const parsed = parseRepoInput(repoInput)!;
-            return { owner: parsed.owner, repo: parsed.repo, token, branch, customExcludes };
+            return { ...collectGitHubFormData(overlay), _action: 'sync' };
         },
-    }) as GitHubConfig | null;
+        resolveSecondaryData: (overlay) => {
+            return { ...collectGitHubFormData(overlay), _action: 'save' };
+        },
+    }) as (GitHubConfig & { _action: string }) | null;
 
     if (!result) return;
 
-    // Attach branch loading after modal is created
-    // (handled via event delegation below)
+    const action = result._action;
+    const config: GitHubConfig = {
+        owner: result.owner,
+        repo: result.repo,
+        branch: result.branch,
+        token: result.token,
+        customExcludes: result.customExcludes,
+    };
 
-    await performSync(result);
+    if (action === 'save') {
+        await saveConfigOnly(config);
+    } else {
+        await performSync(config);
+    }
+}
+
+function collectGitHubFormData(overlay: HTMLElement): GitHubConfig {
+    const repoInput = (overlay.querySelector('[data-role="gh-repo"]') as HTMLInputElement).value;
+    const token = (overlay.querySelector('[data-role="gh-token"]') as HTMLInputElement).value.trim();
+    const branch = (overlay.querySelector('[data-role="gh-branch"]') as HTMLInputElement).value.trim() || 'main';
+    const checkboxes = overlay.querySelectorAll<HTMLInputElement>('[data-role="gh-folder-tree"] input[type="checkbox"]:checked');
+    const customExcludes = Array.from(checkboxes).map(cb => cb.dataset.folder!).filter(Boolean);
+    const parsed = parseRepoInput(repoInput)!;
+    return { owner: parsed.owner, repo: parsed.repo, token, branch, customExcludes };
+}
+
+async function saveConfigOnly(config: GitHubConfig): Promise<void> {
+    if (!state.currentProjectId) return;
+    const project = await getProject(state.currentProjectId);
+    if (!project) return;
+    project.github = config;
+    await saveProject(project);
+    updateGitHubStatus(config);
+    await renderProjectList();
+    toast(t('ghConfigSaved'), 'success');
 }
 
 /* ── Branch loading via event delegation ── */
@@ -352,6 +400,207 @@ document.addEventListener('click', async (e) => {
     }
 });
 
+/* ── Folder tree loading via event delegation ── */
+
+document.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-role="gh-load-folders"]');
+    if (!btn) return;
+
+    const overlay = btn.closest('.modal-overlay');
+    if (!overlay) return;
+
+    const repoInput = (overlay.querySelector('[data-role="gh-repo"]') as HTMLInputElement).value;
+    const token = (overlay.querySelector('[data-role="gh-token"]') as HTMLInputElement).value.trim();
+    const branchInput = (overlay.querySelector('[data-role="gh-branch"]') as HTMLInputElement).value.trim() || 'main';
+    const folderTree = overlay.querySelector('[data-role="gh-folder-tree"]') as HTMLElement;
+
+    const parsed = parseRepoInput(repoInput);
+    if (!parsed) {
+        toast(t('ghInvalidRepo'));
+        return;
+    }
+
+    (btn as HTMLButtonElement).disabled = true;
+    (btn as HTMLButtonElement).textContent = t('loading');
+
+    try {
+        const entries = await fetchTreeEntries(parsed.owner, parsed.repo, branchInput, token || undefined);
+        renderFolderTree(folderTree, entries, _currentExcludes);
+        folderTree.style.display = 'block';
+    } catch (err) {
+        toast((err as Error).message);
+    } finally {
+        (btn as HTMLButtonElement).disabled = false;
+        (btn as HTMLButtonElement).textContent = t('ghLoadFolders');
+    }
+});
+
+/* ── Folder tree toggle via event delegation ── */
+
+document.addEventListener('click', (e) => {
+    const toggle = (e.target as HTMLElement).closest('.gh-tree-toggle');
+    if (!toggle) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const li = toggle.closest('.gh-tree-item') as HTMLElement;
+    if (!li) return;
+    li.classList.toggle('collapsed');
+});
+
+/* ── Folder tree checkbox cascading ── */
+
+document.addEventListener('change', (e) => {
+    const cb = e.target as HTMLInputElement;
+    if (!cb.matches('[data-role="gh-folder-tree"] input[type="checkbox"]')) return;
+    // Cascade to children
+    const li = cb.closest('.gh-tree-item') as HTMLElement;
+    if (!li) return;
+    const childCheckboxes = li.querySelectorAll<HTMLInputElement>(':scope > .gh-tree-children input[type="checkbox"]');
+    childCheckboxes.forEach(child => { child.checked = cb.checked; });
+    // Update parent states
+    updateParentCheckboxes(cb);
+});
+
+function updateParentCheckboxes(cb: HTMLInputElement): void {
+    const parentChildren = cb.closest('.gh-tree-children');
+    if (!parentChildren) return;
+    const parentLi = parentChildren.closest('.gh-tree-item') as HTMLElement;
+    if (!parentLi) return;
+    const parentCb = parentLi.querySelector<HTMLInputElement>(':scope > label input[type="checkbox"]');
+    if (!parentCb) return;
+    const siblings = parentChildren.querySelectorAll<HTMLInputElement>(':scope > .gh-tree-item > label input[type="checkbox"]');
+    const allChecked = Array.from(siblings).every(s => s.checked);
+    const someChecked = Array.from(siblings).some(s => s.checked);
+    parentCb.checked = allChecked;
+    parentCb.indeterminate = !allChecked && someChecked;
+    updateParentCheckboxes(parentCb);
+}
+
+/* ── Build folder tree HTML ── */
+
+interface TreeNode {
+    name: string;
+    path: string;
+    isFile: boolean;
+    children: Map<string, TreeNode>;
+}
+
+function buildTreeFromEntries(entries: TreeEntry[]): TreeNode {
+    const root: TreeNode = { name: '', path: '', isFile: false, children: new Map() };
+    for (const entry of entries) {
+        const parts = entry.path.split('/');
+        let current = root;
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            const pathSoFar = parts.slice(0, i + 1).join('/');
+            const isLast = i === parts.length - 1;
+            if (!current.children.has(part)) {
+                current.children.set(part, {
+                    name: part,
+                    path: pathSoFar,
+                    isFile: isLast && entry.type === 'blob',
+                    children: new Map(),
+                });
+            }
+            current = current.children.get(part)!;
+        }
+    }
+    return root;
+}
+
+function renderFolderTree(container: HTMLElement, entries: TreeEntry[], excludes: string[]): void {
+    const root = buildTreeFromEntries(entries);
+    container.innerHTML = '';
+
+    function renderNode(node: TreeNode, depth: number): HTMLElement {
+        const el = document.createElement('div');
+        el.className = 'gh-tree-item';
+        if (!node.isFile && depth > 0) el.classList.add('collapsed');
+
+        const hasChildren = node.children.size > 0;
+        const isExcluded = excludes.includes(node.path);
+
+        const label = document.createElement('label');
+        label.className = 'gh-tree-label' + (node.isFile ? ' gh-tree-label--file' : '');
+        label.style.paddingLeft = (depth * 18 + 4) + 'px';
+
+        // Toggle arrow for directories with children
+        if (hasChildren) {
+            const toggle = document.createElement('span');
+            toggle.className = 'gh-tree-toggle';
+            toggle.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+            label.appendChild(toggle);
+        } else {
+            const spacer = document.createElement('span');
+            spacer.className = 'gh-tree-spacer';
+            label.appendChild(spacer);
+        }
+
+        // Checkbox
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.folder = node.path;
+        cb.checked = isExcluded;
+        label.appendChild(cb);
+
+        // Icon
+        if (node.isFile) {
+            const ext = node.name.split('.').pop()?.toLowerCase() || '';
+            const extLabel = ext.toUpperCase().slice(0, 4);
+            const color = getExtColor(ext);
+            const icon = document.createElement('span');
+            icon.className = 'gh-tree-file-icon';
+            icon.style.background = color + '22';
+            icon.style.color = color;
+            icon.style.borderColor = color + '44';
+            icon.textContent = extLabel;
+            label.appendChild(icon);
+        } else {
+            const icon = document.createElement('span');
+            icon.className = 'gh-tree-folder-icon';
+            icon.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+            label.appendChild(icon);
+        }
+
+        // Name — original casing preserved from the API
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'gh-tree-name';
+        nameSpan.textContent = node.name;
+        label.appendChild(nameSpan);
+
+        el.appendChild(label);
+
+        if (hasChildren) {
+            const childrenEl = document.createElement('div');
+            childrenEl.className = 'gh-tree-children';
+            // Sort: directories first, then files, alphabetical within each group
+            const sorted = [...node.children.values()].sort((a, b) => {
+                if (a.isFile !== b.isFile) return a.isFile ? 1 : -1;
+                return a.name.localeCompare(b.name);
+            });
+            for (const child of sorted) {
+                childrenEl.appendChild(renderNode(child, depth + 1));
+            }
+            el.appendChild(childrenEl);
+        }
+
+        // If this node is excluded, cascade to children
+        if (isExcluded && hasChildren) {
+            el.querySelectorAll<HTMLInputElement>(':scope > .gh-tree-children input[type="checkbox"]').forEach(c => { c.checked = true; });
+        }
+
+        return el;
+    }
+
+    const sorted = [...root.children.values()].sort((a, b) => {
+        if (a.isFile !== b.isFile) return a.isFile ? 1 : -1;
+        return a.name.localeCompare(b.name);
+    });
+    for (const child of sorted) {
+        container.appendChild(renderNode(child, 0));
+    }
+}
+
 /* ── Perform sync ── */
 
 async function performSync(config: GitHubConfig): Promise<void> {
@@ -398,6 +647,7 @@ async function performSync(config: GitHubConfig): Promise<void> {
         }
 
         renderFileList();
+        updateGitHubStatus(config);
         await renderProjectList();
         toast(t('ghSyncDone', { count: String(files.length) }), 'success');
     } catch (err) {

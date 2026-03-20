@@ -5,7 +5,6 @@ import {
     fileListEl, mainActions, mergeOptions, downloadPdfBtn,
     dropzone, fileListWrapper, togglePdfToTextLabel,
     viewListBtn, viewTilesBtn, addCustomTextBtn,
-    githubBtn,
 } from './dom';
 import { scheduleSave } from './projects';
 import { showModal } from './modal';
@@ -183,11 +182,7 @@ export function renderFileList(): void {
     togglePdfToTextLabel.style.display = hasPdf ? '' : 'none';
 
     fileListWrapper.style.display = '';
-    if (state.files.length) {
-        dropzone.classList.add('hidden');
-    } else {
-        dropzone.classList.remove('hidden');
-    }
+    dropzone.classList.toggle('hidden', state.files.length > 0);
     ++state.renderGeneration;
 
     // Toggle class on file list for grid layout

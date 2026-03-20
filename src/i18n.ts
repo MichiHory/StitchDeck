@@ -74,7 +74,8 @@ const translations: Record<LangKey, Record<string, string>> = {
         ghLoadBranches: 'Load branches',
         ghExcludes: 'Additional excludes',
         ghExcludesPlaceholder: 'node_modules\ndist\n.env',
-        ghExcludesHint: 'Folders/files to exclude beyond .gitignore (one per line)',
+        ghExcludesHint: 'Check folders to exclude beyond .gitignore',
+        ghLoadFolders: 'Load folders',
         ghConnect: 'Connect & sync',
         ghSync: 'Save & sync',
         ghSyncing: 'Syncing from GitHub…',
@@ -92,6 +93,7 @@ const translations: Record<LangKey, Record<string, string>> = {
         ghSettings: 'GitHub settings',
         ghConnected: 'Connected: {repo}',
         ghSyncBtn: 'Sync',
+        ghConfigSaved: 'GitHub settings saved',
     },
     cs: {
         projects: 'Projekty',
@@ -166,7 +168,8 @@ const translations: Record<LangKey, Record<string, string>> = {
         ghLoadBranches: 'Načíst větve',
         ghExcludes: 'Další vynechané',
         ghExcludesPlaceholder: 'node_modules\ndist\n.env',
-        ghExcludesHint: 'Složky/soubory k vynechání nad rámec .gitignore (jeden na řádek)',
+        ghExcludesHint: 'Zaškrtněte složky k vynechání nad rámec .gitignore',
+        ghLoadFolders: 'Načíst složky',
         ghConnect: 'Připojit a synchronizovat',
         ghSync: 'Uložit a synchronizovat',
         ghSyncing: 'Synchronizace z GitHubu…',
@@ -184,6 +187,7 @@ const translations: Record<LangKey, Record<string, string>> = {
         ghSettings: 'Nastavení GitHubu',
         ghConnected: 'Připojeno: {repo}',
         ghSyncBtn: 'Synchronizovat',
+        ghConfigSaved: 'Nastavení GitHubu uloženo',
     },
 };
 

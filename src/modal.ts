@@ -12,6 +12,9 @@ interface ModalOptions {
     resolveData?: (overlay: HTMLElement) => unknown;
     validate?: (overlay: HTMLElement) => string | null;
     modalClass?: string;
+    secondaryConfirmText?: string;
+    secondaryConfirmClass?: string;
+    resolveSecondaryData?: (overlay: HTMLElement) => unknown;
 }
 
 export function showModal(options: ModalOptions): Promise<unknown> {
@@ -26,6 +29,9 @@ export function showModal(options: ModalOptions): Promise<unknown> {
         resolveData = null,
         validate = null,
         modalClass = '',
+        secondaryConfirmText = '',
+        secondaryConfirmClass = 'btn-secondary',
+        resolveSecondaryData = null,
     } = options;
 
     return new Promise(resolve => {
@@ -39,6 +45,7 @@ export function showModal(options: ModalOptions): Promise<unknown> {
                 <div class="modal-error" style="display:none"></div>
                 <div class="modal-buttons">
                     <button class="btn btn-secondary modal-cancel">${escapeHtml(t('cancel'))}</button>
+                    ${secondaryConfirmText ? `<button class="btn ${secondaryConfirmClass} modal-secondary-confirm">${escapeHtml(secondaryConfirmText)}</button>` : ''}
                     <button class="btn ${confirmClass} modal-confirm">${escapeHtml(confirmText)}</button>
                 </div>
             </div>
@@ -81,6 +88,27 @@ export function showModal(options: ModalOptions): Promise<unknown> {
                 close(showInput ? (input!.value.trim() || null) : true);
             }
         });
+        const secondaryBtn = overlay.querySelector<HTMLButtonElement>('.modal-secondary-confirm');
+        if (secondaryBtn) {
+            secondaryBtn.addEventListener('click', () => {
+                if (validate) {
+                    const err = validate(overlay);
+                    if (err) {
+                        errorEl.textContent = err;
+                        errorEl.style.display = '';
+                        return;
+                    }
+                    errorEl.style.display = 'none';
+                }
+                if (resolveSecondaryData) {
+                    close(resolveSecondaryData(overlay));
+                } else if (resolveData) {
+                    close(resolveData(overlay));
+                } else {
+                    close(true);
+                }
+            });
+        }
         cancelBtn.addEventListener('click', () => close(null));
         overlay.addEventListener('click', e => {
             if (e.target === overlay) close(null);

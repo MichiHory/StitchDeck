@@ -44,35 +44,7 @@
     <!-- Main Content -->
     <div class="main-content">
 
-    <!-- Drop Zone (visible when no files) -->
-    <div class="dropzone" id="dropzone">
-        <div class="dropzone-visual">
-            <span class="dropzone-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-            </span>
-            <div class="dropzone-title" data-i18n="dropFilesHere">Drop files here</div>
-            <div class="dropzone-sub" data-i18n="filesWillBeAdded">files will be added to the project</div>
-        </div>
-        <textarea id="pathCapture" class="path-capture"></textarea>
-    </div>
-
-    <!-- Drop Overlay (visible when dragging files over main content) -->
-    <div class="main-content-drop-overlay" id="mainContentDropOverlay">
-        <span class="dropzone-icon">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-        </span>
-        <div class="dropzone-title" data-i18n="dropFilesHere">Drop files here</div>
-    </div>
-
-    <!-- File List -->
+    <!-- File List (always visible — toolbar shows even with no files) -->
     <div class="file-list-wrapper" id="fileListWrapper">
         <div class="file-list-toolbar" id="fileListToolbar">
             <div class="view-toggle" id="viewToggle">
@@ -115,6 +87,34 @@
             </div>
         </div>
         <div class="file-list" id="fileList"></div>
+    </div>
+
+    <!-- Drop Zone (visible when no files) -->
+    <div class="dropzone" id="dropzone">
+        <div class="dropzone-visual">
+            <span class="dropzone-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </span>
+            <div class="dropzone-title" data-i18n="dropFilesHere">Drop files here</div>
+            <div class="dropzone-sub" data-i18n="filesWillBeAdded">files will be added to the project</div>
+        </div>
+        <textarea id="pathCapture" class="path-capture"></textarea>
+    </div>
+
+    <!-- Drop Overlay (visible when dragging files over main content) -->
+    <div class="main-content-drop-overlay" id="mainContentDropOverlay">
+        <span class="dropzone-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+        </span>
+        <div class="dropzone-title" data-i18n="dropFilesHere">Drop files here</div>
     </div>
 
     <!-- Actions -->
