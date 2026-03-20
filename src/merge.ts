@@ -81,7 +81,7 @@ export function initMerge(): void {
                         }
                         if (includePaths) {
                             plainLinesArray.push(`${entry.path}:`);
-                            htmlLinesArray.push(`<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
+                            htmlLinesArray.push(`<span style="color: #27db0f; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
                         }
                         const lines = contentStr.split('\n');
                         plainLinesArray.push(...lines);
@@ -89,7 +89,7 @@ export function initMerge(): void {
                     } else {
                         if (includePaths) {
                             plainLinesArray.push(`${entry.path}:`);
-                            htmlLinesArray.push(`<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
+                            htmlLinesArray.push(`<span style="color: #27db0f; font-weight: 700;">${escapeHtml(entry.path)}:</span>`);
                         }
                         const placeholder = `[PDF \u2013 ${t('pdfBinaryContent')}]`;
                         plainLinesArray.push(placeholder);
@@ -116,7 +116,7 @@ export function initMerge(): void {
                 plainLinesArray.push(...plainContentLines);
 
                 if (includePaths) {
-                    const pathLineHtml = `<span style="color: #39ff14; font-weight: 700;">${escapeHtml(entry.path)}:</span>`;
+                    const pathLineHtml = `<span style="color: #27db0f; font-weight: 700;">${escapeHtml(entry.path)}:</span>`;
                     htmlLinesArray.push(pathLineHtml);
                 }
 

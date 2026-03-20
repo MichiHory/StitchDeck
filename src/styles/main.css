@@ -973,6 +973,15 @@ html.light .top-bar .logo {
 html.light .output-box::-webkit-scrollbar-thumb {
     border-color: var(--surface);
 }
+
+html.light .output-box {
+    background-color: var(--surface-2);
+}
+
+html.light .line-numbers {
+    color: var(--text);
+}
+
 html.light .burst-particle {
     filter: brightness(0.8);
 }
