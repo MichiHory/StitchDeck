@@ -1,4 +1,4 @@
-const DB_NAME = 'fmerge';
+const DB_NAME = 'sheafle';
 const DB_VERSION = 1;
 const STORE_NAME = 'projects';
 

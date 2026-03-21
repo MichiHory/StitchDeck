@@ -99,33 +99,33 @@ hljs.registerLanguage('markdown', markdown);
 
 export function initMerge(): void {
     // Toggle persistence
-    togglePaths.checked = localStorage.getItem('fmerge_togglePaths') !== 'false';
-    toggleTrimEmpty.checked = localStorage.getItem('fmerge_toggleTrimEmpty') === 'true';
-    togglePdfToText.checked = localStorage.getItem('fmerge_togglePdfToText') !== 'false';
-    toggleFileMap.checked = localStorage.getItem('fmerge_toggleFileMap') !== 'false';
-    toggleCompress.checked = localStorage.getItem('fmerge_toggleCompress') === 'true';
-    toggleSecurityScan.checked = localStorage.getItem('fmerge_toggleSecurityScan') !== 'false';
+    togglePaths.checked = localStorage.getItem('sheafle_togglePaths') !== 'false';
+    toggleTrimEmpty.checked = localStorage.getItem('sheafle_toggleTrimEmpty') === 'true';
+    togglePdfToText.checked = localStorage.getItem('sheafle_togglePdfToText') !== 'false';
+    toggleFileMap.checked = localStorage.getItem('sheafle_toggleFileMap') !== 'false';
+    toggleCompress.checked = localStorage.getItem('sheafle_toggleCompress') === 'true';
+    toggleSecurityScan.checked = localStorage.getItem('sheafle_toggleSecurityScan') !== 'false';
     // Mutual exclusivity: if both are on, LLM format wins (it's the more advanced option)
     if (togglePaths.checked && toggleFileMap.checked) {
         togglePaths.checked = false;
-        localStorage.setItem('fmerge_togglePaths', 'false');
+        localStorage.setItem('sheafle_togglePaths', 'false');
     }
     togglePaths.addEventListener('change', () => {
-        localStorage.setItem('fmerge_togglePaths', String(togglePaths.checked));
+        localStorage.setItem('sheafle_togglePaths', String(togglePaths.checked));
         if (togglePaths.checked && toggleFileMap.checked) {
             toggleFileMap.checked = false;
-            localStorage.setItem('fmerge_toggleFileMap', 'false');
+            localStorage.setItem('sheafle_toggleFileMap', 'false');
         }
     });
-    toggleTrimEmpty.addEventListener('change', () => localStorage.setItem('fmerge_toggleTrimEmpty', String(toggleTrimEmpty.checked)));
-    togglePdfToText.addEventListener('change', () => localStorage.setItem('fmerge_togglePdfToText', String(togglePdfToText.checked)));
-    toggleCompress.addEventListener('change', () => localStorage.setItem('fmerge_toggleCompress', String(toggleCompress.checked)));
-    toggleSecurityScan.addEventListener('change', () => localStorage.setItem('fmerge_toggleSecurityScan', String(toggleSecurityScan.checked)));
+    toggleTrimEmpty.addEventListener('change', () => localStorage.setItem('sheafle_toggleTrimEmpty', String(toggleTrimEmpty.checked)));
+    togglePdfToText.addEventListener('change', () => localStorage.setItem('sheafle_togglePdfToText', String(togglePdfToText.checked)));
+    toggleCompress.addEventListener('change', () => localStorage.setItem('sheafle_toggleCompress', String(toggleCompress.checked)));
+    toggleSecurityScan.addEventListener('change', () => localStorage.setItem('sheafle_toggleSecurityScan', String(toggleSecurityScan.checked)));
     toggleFileMap.addEventListener('change', () => {
-        localStorage.setItem('fmerge_toggleFileMap', String(toggleFileMap.checked));
+        localStorage.setItem('sheafle_toggleFileMap', String(toggleFileMap.checked));
         if (toggleFileMap.checked && togglePaths.checked) {
             togglePaths.checked = false;
-            localStorage.setItem('fmerge_togglePaths', 'false');
+            localStorage.setItem('sheafle_togglePaths', 'false');
         }
     });
 

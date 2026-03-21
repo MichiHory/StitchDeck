@@ -215,7 +215,7 @@ const translations: Record<LangKey, Record<string, string>> = {
     },
 };
 
-let currentLang: LangKey = (localStorage.getItem('fmerge_lang') as LangKey) || 'en';
+let currentLang: LangKey = (localStorage.getItem('sheafle_lang') as LangKey) || 'en';
 
 export function getCurrentLang(): LangKey {
     return currentLang;
@@ -223,7 +223,7 @@ export function getCurrentLang(): LangKey {
 
 export function setCurrentLang(lang: LangKey): void {
     currentLang = lang;
-    localStorage.setItem('fmerge_lang', lang);
+    localStorage.setItem('sheafle_lang', lang);
 }
 
 export function getAvailableLangs(): LangKey[] {
