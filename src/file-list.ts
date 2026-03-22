@@ -75,14 +75,14 @@ export function initViewToggle(): void {
     viewListBtn.addEventListener('click', () => {
         if (state.viewMode === 'list') return;
         state.viewMode = 'list';
-        localStorage.setItem('sheafle_viewMode', 'list');
+        localStorage.setItem('stitchdeck_viewMode', 'list');
         updateViewToggleButtons();
         renderFileList();
     });
     viewTilesBtn.addEventListener('click', () => {
         if (state.viewMode === 'tiles') return;
         state.viewMode = 'tiles';
-        localStorage.setItem('sheafle_viewMode', 'tiles');
+        localStorage.setItem('stitchdeck_viewMode', 'tiles');
         updateViewToggleButtons();
         renderFileList();
     });

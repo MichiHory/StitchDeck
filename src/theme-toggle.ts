@@ -1,6 +1,6 @@
 type Theme = 'dark' | 'light';
 
-const STORAGE_KEY = 'sheafle_theme';
+const STORAGE_KEY = 'stitchdeck_theme';
 
 function getStoredTheme(): Theme {
     return (localStorage.getItem(STORAGE_KEY) as Theme) || 'dark';

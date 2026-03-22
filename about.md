@@ -204,7 +204,7 @@ Utilita pro slučování souborů pro LLM. utilita umí:
 * Layout: flexbox, top bar + sidebar (260px) + main content
 * Typografie: Inter (UI text), JetBrains Mono (kód, metadata)
 * SVG ikony v tlačítkách místo emoji — merge, download, copy, upload ikony
-* Logo v top baru s gradientním zeleným pozadím a SVG git-merge ikonou
+* Logo v top baru s gradientním zeleným pozadím a stylizovaným písmenem S
 * Tlačítka s SVG ikonami uvnitř `<span data-i18n>` pro správnou funkci překladů
 * Scrollbary — tenké, custom stylované přes CSS
 * Soubory v seznamu s plynulým zobrazováním remove tlačítka na hover
@@ -237,17 +237,17 @@ Utilita pro slučování souborů pro LLM. utilita umí:
 
 ## Persistence
 
-* **IndexedDB** (databáze `sheafle`, verze 1, object store `projects`)
+* **IndexedDB** (databáze `stitchdeck`, verze 1, object store `projects`)
   - Ukládá projekty se soubory a GitHub konfigurací
   - Operace: getAllProjects, getProject, saveProject, deleteProjectFromDB
 * **localStorage** klíče:
-  - `sheafle_viewMode` — režim zobrazení (list/tiles)
-  - `sheafle_togglePaths` — vkládání cest do výstupu
-  - `sheafle_toggleTrimEmpty` — ořezávání prázdných řádků
-  - `sheafle_togglePdfToText` — extrakce textu z PDF
-  - `sheafle_toggleCompress` — komprese exportu pro LLM
-  - `sheafle_toggleSecurityScan` — bezpečnostní sken před sloučením
-  - `sheafle_toggleFileMap` — vložení mapy souborů na začátek
-  - `sheafle_lang` — jazyk (en/cs)
-  - `sheafle_theme` — téma (dark/light)
-  - `sheafle_activeProject` — ID posledního aktivního projektu
+  - `stitchdeck_viewMode` — režim zobrazení (list/tiles)
+  - `stitchdeck_togglePaths` — vkládání cest do výstupu
+  - `stitchdeck_toggleTrimEmpty` — ořezávání prázdných řádků
+  - `stitchdeck_togglePdfToText` — extrakce textu z PDF
+  - `stitchdeck_toggleCompress` — komprese exportu pro LLM
+  - `stitchdeck_toggleSecurityScan` — bezpečnostní sken před sloučením
+  - `stitchdeck_toggleFileMap` — vložení mapy souborů na začátek
+  - `stitchdeck_lang` — jazyk (en/cs)
+  - `stitchdeck_theme` — téma (dark/light)
+  - `stitchdeck_activeProject` — ID posledního aktivního projektu

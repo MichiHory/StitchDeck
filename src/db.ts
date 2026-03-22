@@ -1,4 +1,4 @@
-const DB_NAME = 'sheafle';
+const DB_NAME = 'stitchdeck';
 const DB_VERSION = 1;
 const STORE_NAME = 'projects';
 

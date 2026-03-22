@@ -57,7 +57,7 @@ export async function switchToProject(id: string): Promise<void> {
     const project = await getProject(id);
     if (!project) return;
     state.currentProjectId = id;
-    localStorage.setItem('sheafle_activeProject', id);
+    localStorage.setItem('stitchdeck_activeProject', id);
     state.files = (project.files || []).map(f => {
         const obj: FileEntry = { name: f.name, path: f.path, content: f.content, size: f.size };
         if (f.pdfData) obj.pdfData = f.pdfData;
@@ -130,7 +130,7 @@ export async function renderProjectList(): Promise<void> {
             if (p.id === state.currentProjectId) {
                 const remaining = await getAllProjects();
                 state.currentProjectId = remaining[0].id;
-                localStorage.setItem('sheafle_activeProject', state.currentProjectId);
+                localStorage.setItem('stitchdeck_activeProject', state.currentProjectId);
                 await switchToProject(state.currentProjectId);
             }
             await renderProjectList();
@@ -151,7 +151,7 @@ export async function createNewProject(): Promise<void> {
     const id = generateId();
     await saveProject({ id, name, files: [] });
     state.currentProjectId = id;
-    localStorage.setItem('sheafle_activeProject', id);
+    localStorage.setItem('stitchdeck_activeProject', id);
     state.files = [];
     state.fullMergedContent = '';
     outputContent.innerHTML = '';
@@ -169,12 +169,12 @@ export async function initProjects(): Promise<void> {
         const id = generateId();
         await saveProject({ id, name: t('defaultProject'), files: [] });
         state.currentProjectId = id;
-        localStorage.setItem('sheafle_activeProject', id);
+        localStorage.setItem('stitchdeck_activeProject', id);
     } else {
-        const savedId = localStorage.getItem('sheafle_activeProject');
+        const savedId = localStorage.getItem('stitchdeck_activeProject');
         const exists = projects.find(p => p.id === savedId);
         state.currentProjectId = exists ? savedId : projects[0].id;
-        localStorage.setItem('sheafle_activeProject', state.currentProjectId!);
+        localStorage.setItem('stitchdeck_activeProject', state.currentProjectId!);
     }
     await renderProjectList();
     await switchToProject(state.currentProjectId!);

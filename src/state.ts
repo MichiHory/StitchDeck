@@ -11,5 +11,5 @@ export const state = {
     renderGeneration: 0,
     currentProjectId: null as string | null,
     saveTimeout: null as ReturnType<typeof setTimeout> | null,
-    viewMode: (localStorage.getItem('sheafle_viewMode') as ViewMode) || 'list' as ViewMode,
+    viewMode: (localStorage.getItem('stitchdeck_viewMode') as ViewMode) || 'list' as ViewMode,
 };

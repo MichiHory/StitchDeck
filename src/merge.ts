@@ -99,33 +99,33 @@ hljs.registerLanguage('markdown', markdown);
 
 export function initMerge(): void {
     // Toggle persistence
-    togglePaths.checked = localStorage.getItem('sheafle_togglePaths') !== 'false';
-    toggleTrimEmpty.checked = localStorage.getItem('sheafle_toggleTrimEmpty') === 'true';
-    togglePdfToText.checked = localStorage.getItem('sheafle_togglePdfToText') !== 'false';
-    toggleFileMap.checked = localStorage.getItem('sheafle_toggleFileMap') !== 'false';
-    toggleCompress.checked = localStorage.getItem('sheafle_toggleCompress') === 'true';
-    toggleSecurityScan.checked = localStorage.getItem('sheafle_toggleSecurityScan') !== 'false';
+    togglePaths.checked = localStorage.getItem('stitchdeck_togglePaths') !== 'false';
+    toggleTrimEmpty.checked = localStorage.getItem('stitchdeck_toggleTrimEmpty') === 'true';
+    togglePdfToText.checked = localStorage.getItem('stitchdeck_togglePdfToText') !== 'false';
+    toggleFileMap.checked = localStorage.getItem('stitchdeck_toggleFileMap') !== 'false';
+    toggleCompress.checked = localStorage.getItem('stitchdeck_toggleCompress') === 'true';
+    toggleSecurityScan.checked = localStorage.getItem('stitchdeck_toggleSecurityScan') !== 'false';
     // Mutual exclusivity: if both are on, LLM format wins (it's the more advanced option)
     if (togglePaths.checked && toggleFileMap.checked) {
         togglePaths.checked = false;
-        localStorage.setItem('sheafle_togglePaths', 'false');
+        localStorage.setItem('stitchdeck_togglePaths', 'false');
     }
     togglePaths.addEventListener('change', () => {
-        localStorage.setItem('sheafle_togglePaths', String(togglePaths.checked));
+        localStorage.setItem('stitchdeck_togglePaths', String(togglePaths.checked));
         if (togglePaths.checked && toggleFileMap.checked) {
             toggleFileMap.checked = false;
-            localStorage.setItem('sheafle_toggleFileMap', 'false');
+            localStorage.setItem('stitchdeck_toggleFileMap', 'false');
         }
     });
-    toggleTrimEmpty.addEventListener('change', () => localStorage.setItem('sheafle_toggleTrimEmpty', String(toggleTrimEmpty.checked)));
-    togglePdfToText.addEventListener('change', () => localStorage.setItem('sheafle_togglePdfToText', String(togglePdfToText.checked)));
-    toggleCompress.addEventListener('change', () => localStorage.setItem('sheafle_toggleCompress', String(toggleCompress.checked)));
-    toggleSecurityScan.addEventListener('change', () => localStorage.setItem('sheafle_toggleSecurityScan', String(toggleSecurityScan.checked)));
+    toggleTrimEmpty.addEventListener('change', () => localStorage.setItem('stitchdeck_toggleTrimEmpty', String(toggleTrimEmpty.checked)));
+    togglePdfToText.addEventListener('change', () => localStorage.setItem('stitchdeck_togglePdfToText', String(togglePdfToText.checked)));
+    toggleCompress.addEventListener('change', () => localStorage.setItem('stitchdeck_toggleCompress', String(toggleCompress.checked)));
+    toggleSecurityScan.addEventListener('change', () => localStorage.setItem('stitchdeck_toggleSecurityScan', String(toggleSecurityScan.checked)));
     toggleFileMap.addEventListener('change', () => {
-        localStorage.setItem('sheafle_toggleFileMap', String(toggleFileMap.checked));
+        localStorage.setItem('stitchdeck_toggleFileMap', String(toggleFileMap.checked));
         if (toggleFileMap.checked && togglePaths.checked) {
             togglePaths.checked = false;
-            localStorage.setItem('sheafle_togglePaths', 'false');
+            localStorage.setItem('stitchdeck_togglePaths', 'false');
         }
     });
 
