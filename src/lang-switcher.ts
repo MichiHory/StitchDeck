@@ -15,6 +15,7 @@ export function renderLangSwitcher(): void {
         btn.addEventListener('click', () => {
             if (lang === currentLang) return;
             setCurrentLang(lang as LangKey);
+            document.documentElement.lang = lang;
             applyTranslations();
             renderLangSwitcher();
             renderFileList();

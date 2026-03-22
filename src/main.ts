@@ -1,7 +1,7 @@
 import './styles/main.css';
 import 'highlight.js/styles/atom-one-dark.css';
 
-import { applyTranslations } from './i18n';
+import { applyTranslations, getCurrentLang } from './i18n';
 import { renderLangSwitcher } from './lang-switcher';
 import { initThemeToggle } from './theme-toggle';
 import { initProjects, createNewProject } from './projects';
@@ -16,6 +16,7 @@ import { newProjectBtn } from './dom';
 initThemeToggle();
 
 // Init i18n
+document.documentElement.lang = getCurrentLang();
 renderLangSwitcher();
 applyTranslations();
 

@@ -228,6 +228,17 @@ Utilita pro slučování souborů pro LLM. utilita umí:
 * Scrollbary — sjednocené globálně přes CSS proměnné `--scroll-thumb`/`--scroll-thumb-hover`, dobře viditelné v obou režimech (dark i light)
 * Soubory v seznamu s plynulým zobrazováním remove tlačítka na hover
 
+## SEO optimalizace
+
+* Meta tagy: description, keywords, author, robots, theme-color
+* Open Graph tagy (og:type, og:title, og:description, og:site_name, og:locale s alternativou cs_CZ)
+* Twitter Card tagy (summary card s title a description)
+* Structured Data (JSON-LD) — schema.org WebApplication s featureList a cenou (zdarma)
+* `<noscript>` blok s plným textovým popisem aplikace a funkcí pro vyhledávače, které neexekuují JS
+* Dynamický `lang` atribut na `<html>` — nastavuje se při inicializaci a při přepnutí jazyka
+* `robots.txt` v `public/` povolující indexaci
+* Optimalizovaný `<title>` s klíčovými slovy (StitchDeck — Merge Files for LLM | AI-Optimized File Merger)
+
 ## Technický stack
 
 * **Build**: Vite 8 (Rolldown) + TypeScript (strict mode, ES2020 target)
@@ -256,6 +267,7 @@ Utilita pro slučování souborů pro LLM. utilita umí:
   - `src/help.ts` — stránka nápovědy s markdown parserem a navigací
   - `src/docs/en.md` — dokumentace v angličtině
   - `src/docs/cs.md` — dokumentace v češtině
+  - `public/robots.txt` — robots.txt pro vyhledávače
 
 ## Persistence
 
