@@ -108,6 +108,7 @@ const translations: Record<LangKey, Record<string, string>> = {
         securityWarningMatch: 'Match',
         securityWarningCount: '{count} potential security issue(s) found',
         securityIgnoreAndMerge: 'Ignore & Merge',
+        help: 'Help',
     },
     cs: {
         projects: 'Projekty',
@@ -216,6 +217,7 @@ const translations: Record<LangKey, Record<string, string>> = {
         securityWarningMatch: 'Shoda',
         securityWarningCount: 'Nalezeno {count} potenciálních bezpečnostních problémů',
         securityIgnoreAndMerge: 'Ignorovat a sloučit',
+        help: 'Nápověda',
     },
 };
 

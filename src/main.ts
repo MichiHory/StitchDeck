@@ -9,6 +9,7 @@ import { initDropzone } from './dropzone';
 import { initMerge } from './merge';
 import { initViewToggle } from './file-list';
 import { initGitHub } from './github-init';
+import { initHelp } from './help';
 import { newProjectBtn } from './dom';
 
 // Init theme
@@ -29,6 +30,9 @@ initMerge();
 
 // Init GitHub integration
 initGitHub();
+
+// Init help page
+initHelp();
 
 // New project button
 newProjectBtn.addEventListener('click', () => createNewProject());

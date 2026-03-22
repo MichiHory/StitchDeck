@@ -192,6 +192,23 @@ Utilita pro slučování souborů pro LLM. utilita umí:
 * Jazyková preference se ukládá do localStorage
 * Při změně jazyka se automaticky překreslí veškeré UI texty
 
+## Nápověda
+
+* Tlačítko nápovědy v patičce panelu projektů (sidebar) s ikonou otazníku
+* Kliknutí otevře stránku s dokumentací, která nahradí hlavní obsah
+* Přímý odkaz na nápovědu přes `#help` v URL — umožňuje sdílení odkazu a přímý přístup bez proklikávání aplikací
+  - Při otevření nápovědy se URL aktualizuje na `#help` (přes `history.pushState`)
+  - Při zavření nápovědy se hash odstraní
+  - Při načtení stránky s `#help` v URL se nápověda automaticky zobrazí
+  - Navigace zpět/vpřed v prohlížeči správně přepíná mezi nápovědou a aplikací
+* Dokumentace uložena v samostatných .md souborech pro každý jazyk (`src/docs/en.md`, `src/docs/cs.md`) — snadné přidání dalších jazyků
+* Jednoduchý markdown parser převádí .md na HTML (h1–h3, odstavce, seznamy, bold, inline code)
+* Dokumentace obsahuje sekce: Začínáme, Projekty, Přidávání souborů, Seznam souborů, Vlastní texty, Slučování a export, GitHub integrace, Tipy a klávesy
+* Postranní navigace je vždy viditelná (fixní panel vlevo vedle scrollovatelného obsahu)
+* Aktivní sekce se zvýrazní v navigaci při scrollování
+* Tlačítko „Zpět do aplikace" pro návrat do hlavního zobrazení
+* Responsivní — na mobilu se navigace zobrazí nad obsahem
+
 ## Světlý/tmavý režim
 
 * Přepínač v horní liště — tlačítko s ikonami slunce (pro přepnutí na light) a měsíce (pro přepnutí na dark)
@@ -203,12 +220,12 @@ Utilita pro slučování souborů pro LLM. utilita umí:
 * Tmavý (dark) a světlý (light) theme s propracovanou barevnou paletou
   - Dark: černé pozadí (#09090b), povrchové úrovně (#131316, #1a1a1f, #222228), zelený accent (#22c55e)
   - Light: světlé pozadí (#f5f5f7), bílé povrchy (#ffffff), tmavší zelený accent (#16a34a)
-* Layout: flexbox, top bar + sidebar (260px) + main content
+* Layout: flexbox, top bar + sidebar (260px, fixní výška viewportu, nescrolluje se s obsahem) + main content
 * Typografie: Inter (UI text), JetBrains Mono (kód, metadata)
 * SVG ikony v tlačítkách místo emoji — merge, download, copy, upload ikony
 * Logo v top baru s gradientním zeleným pozadím a stylizovaným písmenem S
 * Tlačítka s SVG ikonami uvnitř `<span data-i18n>` pro správnou funkci překladů
-* Scrollbary — tenké, custom stylované přes CSS
+* Scrollbary — sjednocené globálně přes CSS proměnné `--scroll-thumb`/`--scroll-thumb-hover`, dobře viditelné v obou režimech (dark i light)
 * Soubory v seznamu s plynulým zobrazováním remove tlačítka na hover
 
 ## Technický stack
@@ -236,6 +253,9 @@ Utilita pro slučování souborů pro LLM. utilita umí:
   - `src/github-init.ts` — inicializace GitHub UI eventů (tlačítka, odpojení)
   - `src/lang-switcher.ts` — přepínač jazyků
   - `src/theme-toggle.ts` — přepínač světlého/tmavého režimu
+  - `src/help.ts` — stránka nápovědy s markdown parserem a navigací
+  - `src/docs/en.md` — dokumentace v angličtině
+  - `src/docs/cs.md` — dokumentace v češtině
 
 ## Persistence
 

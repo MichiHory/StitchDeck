@@ -40,3 +40,5 @@ export const ghStatusBranch = document.getElementById('ghStatusBranch')!;
 export const ghSyncBtn = document.getElementById('ghSyncBtn')! as HTMLButtonElement;
 export const ghSettingsBtn = document.getElementById('ghSettingsBtn')! as HTMLButtonElement;
 export const ghDisconnectBtn = document.getElementById('ghDisconnectBtn')! as HTMLButtonElement;
+export const helpBtn = document.getElementById('helpBtn')! as HTMLButtonElement;
+export const helpPage = document.getElementById('helpPage')!;

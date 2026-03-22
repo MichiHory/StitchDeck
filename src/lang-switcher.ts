@@ -2,6 +2,7 @@ import { getCurrentLang, setCurrentLang, getAvailableLangs, applyTranslations } 
 import type { LangKey } from './i18n';
 import { renderFileList } from './file-list';
 import { renderProjectList } from './projects';
+import { refreshHelp } from './help';
 import { langSwitcher } from './dom';
 
 export function renderLangSwitcher(): void {
@@ -18,6 +19,7 @@ export function renderLangSwitcher(): void {
             renderLangSwitcher();
             renderFileList();
             renderProjectList();
+            refreshHelp();
         });
         langSwitcher.appendChild(btn);
     }
