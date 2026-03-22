@@ -25,10 +25,12 @@ Utilita pro slučování souborů pro LLM. utilita umí:
 
 ## Seznam souborů
 
-* Přepínač zobrazení seznamu souborů — režim seznam (list) a dlaždice (tiles) s přepínačem v toolbaru nad seznamem
+* Přepínač zobrazení seznamu souborů — režim seznam (list), dlaždice (tiles) a strom (tree) s přepínačem v toolbaru nad seznamem
   - **Seznam (list)**: zobrazuje pořadové číslo, drag handle (⋮), ikonu souboru s barevným badge přípony, název souboru, cestu, metadata (velikost, počet řádků) a remove tlačítko
   - **Dlaždice (tiles)**: grid layout (auto-fill, min 170px), kompaktně zobrazuje ikonu, název souboru (zkrácený pokud se nevejde), zkrácenou cestu (direction: rtl — zobrazuje konec cesty), velikost a indikátor řádků/PDF
-  - V obou režimech funguje číslování pořadí a drag & drop reorder
+  - **Strom (tree)**: hierarchické zobrazení souborů seskupených podle adresářové struktury s rozbalovacími/sbalovacími složkami; složky řazeny abecedně před soubory; soubory zobrazují pořadové číslo, ikonu, název, metadata a remove tlačítko; stav sbalení/rozbalení složek přetrvává mezi překreslením; vlastní texty (custom text) zobrazeny na kořenové úrovni; drag & drop reorder funguje na jednotlivých souborech; kliknutím na pořadové číslo se zobrazí inline input pro manuální nastavení pozice (Enter potvrdí, Escape zruší, blur potvrdí)
+  - Ve všech režimech funguje číslování pořadí a drag & drop reorder
+  - Výchozí režim zobrazení je dlaždice (tiles)
   - Preference režimu se ukládá do localStorage
 * Tooltip systém v režimu dlaždic
   - Celá cesta se zobrazí jako tooltip při hoveru po 1 sekundě
@@ -241,7 +243,7 @@ Utilita pro slučování souborů pro LLM. utilita umí:
   - Ukládá projekty se soubory a GitHub konfigurací
   - Operace: getAllProjects, getProject, saveProject, deleteProjectFromDB
 * **localStorage** klíče:
-  - `stitchdeck_viewMode` — režim zobrazení (list/tiles)
+  - `stitchdeck_viewMode` — režim zobrazení (list/tiles/tree)
   - `stitchdeck_togglePaths` — vkládání cest do výstupu
   - `stitchdeck_toggleTrimEmpty` — ořezávání prázdných řádků
   - `stitchdeck_togglePdfToText` — extrakce textu z PDF

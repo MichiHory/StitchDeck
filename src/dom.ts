@@ -31,6 +31,7 @@ export const langSwitcher = document.getElementById('langSwitcher')!;
 export const viewToggle = document.getElementById('viewToggle')!;
 export const viewListBtn = document.getElementById('viewListBtn')! as HTMLButtonElement;
 export const viewTilesBtn = document.getElementById('viewTilesBtn')! as HTMLButtonElement;
+export const viewTreeBtn = document.getElementById('viewTreeBtn')! as HTMLButtonElement;
 export const addCustomTextBtn = document.getElementById('addCustomTextBtn')! as HTMLButtonElement;
 export const githubBtn = document.getElementById('githubBtn')! as HTMLButtonElement;
 export const ghStatusBar = document.getElementById('ghStatusBar')!;

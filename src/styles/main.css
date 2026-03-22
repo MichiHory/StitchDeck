@@ -695,6 +695,162 @@ body {
     box-shadow: none;
 }
 
+/* ── Tree View ── */
+.file-list--tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.tree-dir-header {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .35rem .75rem;
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    transition: background var(--transition);
+    user-select: none;
+}
+.tree-dir-header:hover {
+    background: var(--surface-2);
+}
+.tree-dir-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: var(--text-dim);
+    transition: transform .15s ease;
+    transform: rotate(0deg);
+}
+.tree-dir-arrow.open {
+    transform: rotate(90deg);
+}
+.tree-dir-icon {
+    color: var(--text-dim);
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+.tree-dir-name {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.tree-file {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .3rem .75rem;
+    border-radius: var(--radius-xs);
+    font-size: .82rem;
+    cursor: grab;
+    transition: background var(--transition);
+    user-select: none;
+}
+.tree-file:hover {
+    background: var(--surface-2);
+}
+.tree-file.dragging {
+    opacity: .35;
+}
+.tree-file.drag-over-item {
+    background: var(--accent-dim);
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+.tree-file .file-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 3px;
+    display: grid;
+    place-items: center;
+    font-size: .55rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -.02em;
+}
+.tree-file-order {
+    color: var(--text-dim);
+    font-size: .6rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 1.4rem;
+    text-align: center;
+    opacity: .5;
+    flex-shrink: 0;
+}
+.tree-file-order--clickable {
+    cursor: pointer;
+    padding: 1px 3px;
+    border-radius: 3px;
+    transition: all var(--transition);
+    opacity: .5;
+}
+.tree-file:hover .tree-file-order--clickable {
+    opacity: 1;
+    background: var(--surface-2);
+    color: var(--accent);
+}
+.tree-order-input {
+    width: 3ch;
+    font-size: .65rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+    background: var(--surface-3);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    color: var(--accent);
+    padding: 1px 2px;
+    outline: none;
+    flex-shrink: 0;
+    -moz-appearance: textfield;
+}
+.tree-order-input::-webkit-inner-spin-button,
+.tree-order-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.tree-file-name {
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+.tree-file-meta {
+    color: var(--text-dim);
+    font-size: .65rem;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.tree-file .tree-remove {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: var(--radius-xs);
+    font-size: .75rem;
+    line-height: 1;
+    opacity: 0;
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+.tree-file:hover .tree-remove {
+    opacity: 1;
+}
+.tree-file .tree-remove:hover {
+    color: var(--danger);
+    background: var(--danger-dim);
+}
+
 /* ── Tile Tooltip ── */
 .tile-tooltip {
     position: fixed;
