@@ -35,7 +35,7 @@ import ini from 'highlight.js/lib/languages/ini';
 import markdown from 'highlight.js/lib/languages/markdown';
 
 import {MAX_DISPLAY_LINES, state} from './state';
-import {cleanPath, compressForLLM, countTokens, escapeHtml, formatSize, formatTokens, getLanguage, readFile, scanForSecurityIssues} from './helpers';
+import {applyReplacements, buildSecretReplacements, cleanPath, compressForLLM, countTokens, escapeHtml, formatSize, formatTokens, getLanguage, readFile, scanForSecurityIssues, type SecurityFinding} from './helpers';
 import {t} from './i18n';
 import {toast} from './toast';
 import {showModal} from './modal';
@@ -97,6 +97,79 @@ hljs.registerLanguage('dockerfile', dockerfile);
 hljs.registerLanguage('ini', ini);
 hljs.registerLanguage('markdown', markdown);
 
+/** Show security scan dialog with per-finding replace checkboxes. Returns null if cancelled. */
+async function showSecurityDialog(findings: SecurityFinding[]): Promise<{ replacements: Set<number> } | null> {
+    const tableRows = findings.map((f, idx) =>
+        `<tr>
+            <td class="security-replace-cell"><input type="checkbox" data-finding-idx="${idx}" checked></td>
+            <td title="${escapeHtml(f.file)}">${escapeHtml(f.file.split('/').pop() || f.file)}</td>
+            <td>${f.line}</td>
+            <td>${escapeHtml(f.type)}</td>
+            <td>${escapeHtml(f.detail)}</td>
+            <td class="security-match">${escapeHtml(f.matched)}</td>
+        </tr>`
+    ).join('');
+
+    const bodyHtml = `
+        <div class="security-warning-body">
+            <p class="security-warning-intro">${t('securityWarningIntro')}</p>
+            <p class="security-warning-count">${t('securityWarningCount', { count: findings.length })}</p>
+            <div class="security-table-wrap">
+                <table class="security-table">
+                    <thead>
+                        <tr>
+                            <th class="security-replace-cell"><input type="checkbox" data-select-all checked></th>
+                            <th>${t('securityWarningFile')}</th>
+                            <th>${t('securityWarningLine')}</th>
+                            <th>${t('securityWarningType')}</th>
+                            <th>${t('securityWarningDetail')}</th>
+                            <th>${t('securityWarningMatch')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </div>
+            <p class="security-replace-hint">${t('securityReplaceHint')}</p>
+        </div>
+    `;
+
+    const result = await showModal({
+        title: t('securityWarningTitle'),
+        body: bodyHtml,
+        confirmText: t('securityMerge'),
+        confirmClass: 'btn-primary',
+        modalClass: 'modal--large',
+        onMount: (overlay) => {
+            const selectAll = overlay.querySelector<HTMLInputElement>('input[data-select-all]');
+            if (!selectAll) return;
+            const checkboxes = () => overlay.querySelectorAll<HTMLInputElement>('input[data-finding-idx]');
+
+            selectAll.addEventListener('change', () => {
+                checkboxes().forEach(cb => { cb.checked = selectAll.checked; });
+            });
+
+            overlay.addEventListener('change', (e) => {
+                const target = e.target as HTMLInputElement;
+                if (target.dataset.findingIdx != null) {
+                    const all = checkboxes();
+                    const checkedCount = Array.from(all).filter(cb => cb.checked).length;
+                    selectAll.checked = checkedCount === all.length;
+                    selectAll.indeterminate = checkedCount > 0 && checkedCount < all.length;
+                }
+            });
+        },
+        resolveData: (overlay) => {
+            const replacements = new Set<number>();
+            overlay.querySelectorAll<HTMLInputElement>('input[data-finding-idx]').forEach(cb => {
+                if (cb.checked) replacements.add(Number(cb.dataset.findingIdx));
+            });
+            return { replacements };
+        },
+    });
+
+    return result as { replacements: Set<number> } | null;
+}
+
 export function initMerge(): void {
     // Toggle persistence
     togglePaths.checked = localStorage.getItem('stitchdeck_togglePaths') !== 'false';
@@ -134,6 +207,7 @@ export function initMerge(): void {
         if (!state.files.length) return;
 
         // Security scan
+        let secretReplacements: Map<string, Map<number, string>> | null = null;
         if (toggleSecurityScan.checked) {
             // Ensure lazy-loaded files have content
             for (const f of state.files) {
@@ -143,45 +217,12 @@ export function initMerge(): void {
             }
             const findings = scanForSecurityIssues(state.files);
             if (findings.length > 0) {
-                const tableRows = findings.map(f =>
-                    `<tr>
-                        <td title="${escapeHtml(f.file)}">${escapeHtml(f.file.split('/').pop() || f.file)}</td>
-                        <td>${f.line}</td>
-                        <td>${escapeHtml(f.type)}</td>
-                        <td>${escapeHtml(f.detail)}</td>
-                        <td class="security-match">${escapeHtml(f.matched)}</td>
-                    </tr>`
-                ).join('');
-
-                const bodyHtml = `
-                    <div class="security-warning-body">
-                        <p class="security-warning-intro">${t('securityWarningIntro')}</p>
-                        <p class="security-warning-count">${t('securityWarningCount', { count: findings.length })}</p>
-                        <div class="security-table-wrap">
-                            <table class="security-table">
-                                <thead>
-                                    <tr>
-                                        <th>${t('securityWarningFile')}</th>
-                                        <th>${t('securityWarningLine')}</th>
-                                        <th>${t('securityWarningType')}</th>
-                                        <th>${t('securityWarningDetail')}</th>
-                                        <th>${t('securityWarningMatch')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${tableRows}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-
-                const proceed = await showModal({
-                    title: t('securityWarningTitle'),
-                    body: bodyHtml,
-                    confirmText: t('securityIgnoreAndMerge'),
-                    confirmClass: 'btn-danger',
-                    modalClass: 'modal--large',
-                });
-                if (!proceed) return;
+                const scanResult = await showSecurityDialog(findings);
+                if (!scanResult) return; // cancelled
+                if (scanResult.replacements.size > 0) {
+                    secretReplacements = buildSecretReplacements(state.files, findings, scanResult.replacements);
+                    toast(t('securitySecretsReplaced', { count: scanResult.replacements.size }), 'success');
+                }
             }
         }
 
@@ -301,6 +342,13 @@ export function initMerge(): void {
                 }
 
                 let contentStr = entry.content || '';
+                // Apply secret replacements to output (source files remain untouched)
+                if (secretReplacements) {
+                    const lineRepl = secretReplacements.get(entry.path);
+                    if (lineRepl) {
+                        contentStr = applyReplacements(contentStr, lineRepl);
+                    }
+                }
                 const lang = getLanguage(entry.path);
 
                 if (compress) {

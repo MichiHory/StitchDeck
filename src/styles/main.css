@@ -2219,6 +2219,23 @@ html.light .btn-add-text:hover {
     color: var(--danger);
     font-weight: 500;
 }
+.security-replace-cell {
+    width: 32px;
+    text-align: center !important;
+    padding-left: .3rem !important;
+    padding-right: .3rem !important;
+}
+.security-replace-cell input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+.security-replace-hint {
+    margin-top: .75rem;
+    color: var(--text-dim);
+    font-size: .78rem;
+    font-style: italic;
+    line-height: 1.4;
+}
 
 /* ── Responsive ── */
 @media (max-width: 768px) {

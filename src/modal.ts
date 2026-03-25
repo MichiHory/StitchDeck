@@ -15,6 +15,7 @@ interface ModalOptions {
     secondaryConfirmText?: string;
     secondaryConfirmClass?: string;
     resolveSecondaryData?: (overlay: HTMLElement) => unknown;
+    onMount?: (overlay: HTMLElement) => void;
 }
 
 export function showModal(options: ModalOptions): Promise<unknown> {
@@ -32,6 +33,7 @@ export function showModal(options: ModalOptions): Promise<unknown> {
         secondaryConfirmText = '',
         secondaryConfirmClass = 'btn-secondary',
         resolveSecondaryData = null,
+        onMount = null,
     } = options;
 
     return new Promise(resolve => {
@@ -51,6 +53,7 @@ export function showModal(options: ModalOptions): Promise<unknown> {
             </div>
         `;
         document.body.appendChild(overlay);
+        if (onMount) onMount(overlay);
         requestAnimationFrame(() => overlay.classList.add('visible'));
 
         const input = overlay.querySelector<HTMLInputElement>('.modal-input');

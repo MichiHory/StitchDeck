@@ -285,6 +285,82 @@ export function scanForSecurityIssues(files: { path: string; content: string | n
     return findings;
 }
 
+/** Generate a random alphanumeric string of given length. */
+function randomString(length: number): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+/**
+ * Build a replacement map: file path → Map<lineNumber, replacedLineContent>.
+ * Only findings whose index is in `indicesToReplace` are processed.
+ * Does NOT mutate the source files — returns data to be applied on output.
+ */
+export function buildSecretReplacements(
+    files: { path: string; content: string | null; pdfData?: string }[],
+    findings: SecurityFinding[],
+    indicesToReplace: Set<number>,
+): Map<string, Map<number, string>> {
+    const result = new Map<string, Map<number, string>>();
+
+    // Collect content lines per file (lazy, only files that have findings to replace)
+    const contentCache = new Map<string, string[]>();
+    for (const file of files) {
+        if (file.content && !file.pdfData) {
+            contentCache.set(file.path, file.content.split('\n'));
+        }
+    }
+
+    for (let i = 0; i < findings.length; i++) {
+        if (!indicesToReplace.has(i)) continue;
+        const finding = findings[i];
+        const lines = contentCache.get(finding.file);
+        if (!lines) continue;
+
+        const lineIdx = finding.line - 1;
+        if (lineIdx < 0 || lineIdx >= lines.length) continue;
+
+        // Start from already-replaced line if we already touched it
+        let fileMap = result.get(finding.file);
+        if (!fileMap) {
+            fileMap = new Map();
+            result.set(finding.file, fileMap);
+        }
+        const currentLine = fileMap.get(finding.line) ?? lines[lineIdx];
+
+        for (const pattern of SECURITY_PATTERNS) {
+            const match = currentLine.match(pattern.regex);
+            if (match && pattern.name === finding.type) {
+                const secret = match[1] || match[0];
+                const replacement = randomString(secret.length);
+                fileMap.set(finding.line, currentLine.replace(secret, replacement));
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Apply secret replacements to a file's content string.
+ * Returns a new string with replaced lines — original is not mutated.
+ */
+export function applyReplacements(content: string, lineReplacements: Map<number, string>): string {
+    const lines = content.split('\n');
+    for (const [lineNum, replaced] of lineReplacements) {
+        const idx = lineNum - 1;
+        if (idx >= 0 && idx < lines.length) {
+            lines[idx] = replaced;
+        }
+    }
+    return lines.join('\n');
+}
+
 export function getLanguage(filename: string): string {
     const ext = filename.split('.').pop()!.toLowerCase();
     if (['js', 'jsx', 'mjs', 'cjs'].includes(ext)) return 'javascript';
