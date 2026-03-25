@@ -99,9 +99,17 @@
     <aside class="sidebar">
         <div class="sidebar-header">
             <span data-i18n="projects">Projects</span>
-            <button class="add-btn" id="newProjectBtn" data-i18n-title="newProject" title="New project">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
+            <div class="sidebar-header-actions">
+                <button class="sidebar-icon-btn" id="importBtn" data-i18n-title="importProjects" title="Import projects">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+                <button class="sidebar-icon-btn" id="exportBtn" data-i18n-title="exportProjects" title="Export projects">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </button>
+                <button class="add-btn" id="newProjectBtn" data-i18n-title="newProject" title="New project">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+            </div>
         </div>
         <div class="project-list" id="projectList"></div>
         <div class="sidebar-footer">
@@ -117,6 +125,19 @@
 
     <!-- Main Content -->
     <div class="main-content">
+
+    <!-- No Project Placeholder -->
+    <div class="no-project" id="noProject" style="display:none">
+        <div class="no-project-inner">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".35">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <button class="btn btn-primary" id="noProjectCreateBtn">
+                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                <span data-i18n="newProject">New project</span>
+            </button>
+        </div>
+    </div>
 
     <!-- File List (always visible — toolbar shows even with no files) -->
     <div class="file-list-wrapper" id="fileListWrapper">
@@ -282,7 +303,7 @@
     </div><!-- /app-body -->
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast-container" id="toast-container"></div>
 
 <script type="module" src="/src/main.ts"></script>
 </body>

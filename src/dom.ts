@@ -42,3 +42,7 @@ export const ghSettingsBtn = document.getElementById('ghSettingsBtn')! as HTMLBu
 export const ghDisconnectBtn = document.getElementById('ghDisconnectBtn')! as HTMLButtonElement;
 export const helpBtn = document.getElementById('helpBtn')! as HTMLButtonElement;
 export const helpPage = document.getElementById('helpPage')!;
+export const exportBtn = document.getElementById('exportBtn')! as HTMLButtonElement;
+export const importBtn = document.getElementById('importBtn')! as HTMLButtonElement;
+export const noProject = document.getElementById('noProject')!;
+export const noProjectCreateBtn = document.getElementById('noProjectCreateBtn')! as HTMLButtonElement;

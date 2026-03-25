@@ -37,9 +37,31 @@ Click a project name in the list. The current project is saved automatically bef
 - Hover over a project to reveal the rename (pencil) and delete (cross) icons
 - Click the pencil icon to open a rename dialog with the current name pre-filled
 - Click the cross icon to delete — a confirmation dialog will appear
-- You cannot delete the last remaining project
+- You can delete all projects, including the last one — when no projects exist, the main area shows a centered **New project** button
 
-Projects are sorted alphabetically according to your language settings. On first launch, a default project named "Default project" is created automatically.
+Projects are sorted alphabetically according to your language settings.
+
+### Export and import
+
+You can export your projects to a compressed `.sdeck` file and import them back — useful for backups, transferring projects between browsers, or sharing with colleagues.
+
+**Export:**
+
+- Click the **export** icon button in the projects panel header (arrow up icon, next to the + button)
+- A dialog appears with checkboxes for all projects — select which to export, or use **Select all**
+- Optionally set a **password** to encrypt the file (minimum 6 characters) — the file is encrypted with AES-256-GCM using PBKDF2 key derivation (600,000 iterations). Without a password, the file is only compressed.
+- Click **Export** to download the `.sdeck` file
+
+**Import:**
+
+- Click the **import** icon button in the projects panel header (arrow down icon)
+- Select a `.sdeck` file — if it's password-protected, you'll be prompted for the password
+- If any imported project names already exist, a dialog appears for each duplicate with options:
+  - **Rename** — a text input appears with a suggested name (e.g. "My project (imported)") that you can edit freely
+  - **Overwrite** — replaces the existing project
+  - **Create duplicate** — imports with the same name alongside the existing project
+  - **Skip** — don't import this project
+- Errors during import are displayed as stacked toast notifications so all messages are visible at once
 
 ## Adding Files
 
@@ -215,4 +237,4 @@ No data is ever sent to any external server. Clearing your browser data will rem
 
 ### Browser support
 
-StitchDeck works in all modern browsers — Chrome, Firefox, Safari, and Edge. It requires JavaScript to be enabled and uses modern browser APIs (IndexedDB, Clipboard API, Drag & Drop API).
+StitchDeck works in all modern browsers — Chrome, Firefox, Safari, and Edge. It requires JavaScript to be enabled and uses modern browser APIs (IndexedDB, Clipboard API, Drag & Drop API, Web Crypto API, CompressionStream).

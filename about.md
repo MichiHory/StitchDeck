@@ -6,11 +6,33 @@ Utilita pro slučování souborů pro LLM. utilita umí:
   - Vytvářet nové projekty přes modální dialog
   - Přepínat mezi projekty kliknutím na název
   - Přejmenovávat projekty inline (ikona tužky při hoveru)
-  - Mazat projekty s potvrzovacím dialogem (ikona ✕ při hoveru)
+  - Mazat projekty s potvrzovacím dialogem (ikona ✕ při hoveru) — lze smazat i poslední projekt
   - Projekty řazeny abecedně dle locale
+* Pokud nejsou žádné projekty, hlavní obsah zobrazí placeholder s tlačítkem „Nový projekt" na středu obrazovky
 * Persistentně ukládat data do IndexedDB — soubory přežijí zavření prohlížeče
 * Automaticky obnovit poslední aktivní projekt při spuštění aplikace (uloženo v localStorage)
-* Při prvním spuštění automaticky vytvořit výchozí projekt „Default project"
+* Při prvním spuštění (bez projektů) zobrazí placeholder s výzvou k vytvoření projektu
+
+## Export a import projektů
+
+* Export projektů do komprimovaného souboru (.sdeck formát)
+  - Modální dialog pro výběr projektů k exportu (všechny nebo jen některé)
+  - Checkbox "Vybrat vše" s indeterminate stavem
+  - Volitelné heslo pro šifrování souboru (AES-256-GCM s PBKDF2 derivací klíče)
+  - Bez hesla se soubor pouze komprimuje (gzip), s heslem se navíc šifruje
+  - Stažení souboru jako `stitchdeck-export.sdeck`
+* Import projektů ze .sdeck souboru
+  - Automatická detekce šifrovaného souboru — výzva k zadání hesla
+  - Detekce duplicitních názvů projektů s dialogem pro volbu akce:
+    - Přepsat existující projekt
+    - Přejmenovat importovaný projekt (předvyplněný název s suffixem "(importováno)", uživatel může manuálně upravit)
+    - Vytvořit projekt s duplicitním názvem
+    - Přeskočit
+  - Chybové hlášky zobrazeny jako stacked toast notifikace (více chyb viditelných najednou)
+* Tlačítka Export/Import v hlavičce postranního panelu (sidebar) vedle tlačítka pro nový projekt — kompaktní ikonová tlačítka
+* Binární formát .sdeck: magic bytes "SDCK" + verze + příznak šifrování + [salt + iv + šifrovaná data] nebo [komprimovaná data]
+* Používá nativní Web Crypto API (PBKDF2, AES-GCM) a CompressionStream/DecompressionStream — žádné externí závislosti
+* Plná podpora i18n (EN/CS)
 
 ## Nahrávání souborů
 
@@ -162,10 +184,12 @@ Utilita pro slučování souborů pro LLM. utilita umí:
 ## Notifikace a modální okna
 
 * Toast notifikace pro zpětnou vazbu uživateli
-  - Pozicované dole uprostřed, pill shape s border a backdrop blur
+  - Pozicované dole uprostřed v kontejneru, pill shape s border a backdrop blur
+  - Podpora více toast notifikací zobrazených současně (stacking) — nové se zobrazují nad předchozími
   - Úspěšné akce: zelené accent pozadí a text, prefix ✓
-  - Varovné/chybové: neutrální styl
-  - Auto-dismiss po 3.5 sekundě
+  - Chybové akce: červené accent pozadí a text
+  - Varovné: neutrální styl
+  - Auto-dismiss po 3.5 sekundě (každý toast nezávisle)
 * Modální okna pro akce
   - Backdrop blur efekt
   - Zavření kliknutím na pozadí nebo klávesou ESC
@@ -256,6 +280,7 @@ Utilita pro slučování souborů pro LLM. utilita umí:
   - `src/modal.ts` — modální dialogy (generický komponent s validací)
   - `src/animations.ts` — particle burst a grow-in animace
   - `src/projects.ts` — správa projektů (CRUD, persistence, přepínání)
+  - `src/export-import.ts` — export a import projektů (komprese, šifrování, UI dialogy, řešení duplicit)
   - `src/file-list.ts` — renderování seznamu souborů, drag & drop reorder, custom text dialogy
   - `src/dropzone.ts` — drag & drop nahrávání souborů
   - `src/merge.ts` — slučování, kopírování, stahování (text i PDF), clear all

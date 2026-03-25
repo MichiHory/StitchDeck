@@ -1,17 +1,24 @@
-const toastEl = document.getElementById('toast')!;
-let toastTimer: ReturnType<typeof setTimeout> | undefined;
+const toastContainer = document.getElementById('toast-container')!;
 
-export function toast(msg: string, type?: 'success'): void {
-    toastEl.classList.remove('success');
+export function toast(msg: string, type?: 'success' | 'error'): void {
+    const el = document.createElement('div');
+    el.className = 'toast';
     if (type === 'success') {
-        toastEl.textContent = '\u2713 ' + msg;
-        toastEl.classList.add('success');
+        el.textContent = '\u2713 ' + msg;
+        el.classList.add('success');
+    } else if (type === 'error') {
+        el.textContent = msg;
+        el.classList.add('error');
     } else {
-        toastEl.textContent = msg;
+        el.textContent = msg;
     }
-    toastEl.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-        toastEl.classList.remove('show', 'success');
+    toastContainer.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+
+    setTimeout(() => {
+        el.classList.remove('show');
+        el.addEventListener('transitionend', () => el.remove(), { once: true });
+        // Fallback removal if transitionend doesn't fire
+        setTimeout(() => el.remove(), 500);
     }, 3500);
 }

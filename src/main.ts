@@ -10,7 +10,8 @@ import { initMerge } from './merge';
 import { initViewToggle } from './file-list';
 import { initGitHub } from './github-init';
 import { initHelp } from './help';
-import { newProjectBtn } from './dom';
+import { showExportDialog, triggerImport } from './export-import';
+import { newProjectBtn, exportBtn, importBtn, noProjectCreateBtn } from './dom';
 
 // Init theme
 initThemeToggle();
@@ -37,6 +38,11 @@ initHelp();
 
 // New project button
 newProjectBtn.addEventListener('click', () => createNewProject());
+noProjectCreateBtn.addEventListener('click', () => createNewProject());
+
+// Export / Import
+exportBtn.addEventListener('click', () => showExportDialog());
+importBtn.addEventListener('click', () => triggerImport());
 
 // Init projects (load from IndexedDB)
 initProjects();

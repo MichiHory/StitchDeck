@@ -10,7 +10,23 @@ import {
     projectListEl, outputContent, lineNumbers,
     outputSection, truncationWarning,
     ghStatusBar, ghStatusRepo, ghStatusBranch,
+    noProject, fileListWrapper, dropzone, mainActions, mergeOptions,
 } from './dom';
+
+export function showNoProjectState(): void {
+    noProject.style.display = '';
+    fileListWrapper.style.display = 'none';
+    dropzone.style.display = 'none';
+    mainActions.style.display = 'none';
+    mergeOptions.style.display = 'none';
+    outputSection.style.display = 'none';
+    ghStatusBar.style.display = 'none';
+}
+
+export function hideNoProjectState(): void {
+    noProject.style.display = 'none';
+    fileListWrapper.style.display = '';
+}
 
 export function scheduleSave(): void {
     if (state.saveTimeout) clearTimeout(state.saveTimeout);
@@ -56,6 +72,7 @@ export function updateGitHubStatus(github?: import('./db').GitHubConfig): void {
 export async function switchToProject(id: string): Promise<void> {
     const project = await getProject(id);
     if (!project) return;
+    hideNoProjectState();
     state.currentProjectId = id;
     localStorage.setItem('stitchdeck_activeProject', id);
     state.files = (project.files || []).map(f => {
@@ -115,10 +132,6 @@ export async function renderProjectList(): Promise<void> {
             toast(t('projectRenamed', { name }), 'success');
         });
         el.querySelector('.delete-btn')!.addEventListener('click', async () => {
-            if (projects.length <= 1) {
-                toast(t('cannotDeleteLast'));
-                return;
-            }
             const confirmed = await showModal({
                 title: t('deleteProject'),
                 body: t('deleteProjectConfirm', { name: escapeHtml(p.name) }),
@@ -129,9 +142,17 @@ export async function renderProjectList(): Promise<void> {
             await deleteProjectFromDB(p.id);
             if (p.id === state.currentProjectId) {
                 const remaining = await getAllProjects();
-                state.currentProjectId = remaining[0].id;
-                localStorage.setItem('stitchdeck_activeProject', state.currentProjectId);
-                await switchToProject(state.currentProjectId);
+                if (remaining.length > 0) {
+                    state.currentProjectId = remaining[0].id;
+                    localStorage.setItem('stitchdeck_activeProject', state.currentProjectId);
+                    await switchToProject(state.currentProjectId);
+                } else {
+                    state.currentProjectId = null;
+                    state.files = [];
+                    state.fullMergedContent = '';
+                    localStorage.removeItem('stitchdeck_activeProject');
+                    showNoProjectState();
+                }
             }
             await renderProjectList();
             toast(t('projectDeleted'), 'success');
@@ -148,6 +169,7 @@ export async function createNewProject(): Promise<void> {
         confirmText: t('create'),
     }) as string | null;
     if (!name) return;
+    hideNoProjectState();
     const id = generateId();
     await saveProject({ id, name, files: [] });
     state.currentProjectId = id;
@@ -158,6 +180,7 @@ export async function createNewProject(): Promise<void> {
     lineNumbers.textContent = '';
     outputSection.style.display = 'none';
     truncationWarning.classList.remove('visible');
+    updateGitHubStatus(undefined);
     renderFileList();
     await renderProjectList();
     toast(t('projectCreated', { name: name.trim() }), 'success');
@@ -166,16 +189,15 @@ export async function createNewProject(): Promise<void> {
 export async function initProjects(): Promise<void> {
     const projects = await getAllProjects();
     if (projects.length === 0) {
-        const id = generateId();
-        await saveProject({ id, name: t('defaultProject'), files: [] });
-        state.currentProjectId = id;
-        localStorage.setItem('stitchdeck_activeProject', id);
-    } else {
-        const savedId = localStorage.getItem('stitchdeck_activeProject');
-        const exists = projects.find(p => p.id === savedId);
-        state.currentProjectId = exists ? savedId : projects[0].id;
-        localStorage.setItem('stitchdeck_activeProject', state.currentProjectId!);
+        state.currentProjectId = null;
+        showNoProjectState();
+        await renderProjectList();
+        return;
     }
+    const savedId = localStorage.getItem('stitchdeck_activeProject');
+    const exists = projects.find(p => p.id === savedId);
+    state.currentProjectId = exists ? savedId : projects[0].id;
+    localStorage.setItem('stitchdeck_activeProject', state.currentProjectId!);
     await renderProjectList();
     await switchToProject(state.currentProjectId!);
 }

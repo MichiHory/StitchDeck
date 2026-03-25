@@ -37,9 +37,31 @@ Klikněte na název projektu v seznamu. Aktuální projekt se před přepnutím 
 - Najeďte myší na projekt — zobrazí se ikony pro přejmenování (tužka) a smazání (křížek)
 - Klikněte na ikonu tužky pro otevření dialogu s předvyplněným aktuálním názvem
 - Klikněte na ikonu křížku pro smazání — zobrazí se potvrzovací dialog
-- Nelze smazat poslední zbývající projekt
+- Lze smazat všechny projekty včetně posledního — pokud žádné projekty neexistují, hlavní oblast zobrazí tlačítko **Nový projekt** uprostřed
 
-Projekty jsou řazeny abecedně podle nastavení jazyka. Při prvním spuštění se automaticky vytvoří výchozí projekt s názvem „Výchozí projekt".
+Projekty jsou řazeny abecedně podle nastavení jazyka.
+
+### Export a import
+
+Projekty můžete exportovat do komprimovaného souboru `.sdeck` a zpětně je importovat — hodí se pro zálohy, přenos mezi prohlížeči nebo sdílení s kolegy.
+
+**Export:**
+
+- Klikněte na ikonové tlačítko **export** v záhlaví panelu projektů (šipka nahoru, vedle tlačítka +)
+- Zobrazí se dialog s checkboxy pro všechny projekty — vyberte, které exportovat, nebo použijte **Vybrat vše**
+- Volitelně nastavte **heslo** pro šifrování souboru (minimálně 6 znaků) — soubor se zašifruje pomocí AES-256-GCM s derivací klíče PBKDF2 (600 000 iterací). Bez hesla se soubor pouze zkomprimuje.
+- Klikněte na **Exportovat** pro stažení souboru `.sdeck`
+
+**Import:**
+
+- Klikněte na ikonové tlačítko **import** v záhlaví panelu projektů (šipka dolů)
+- Vyberte soubor `.sdeck` — pokud je chráněn heslem, budete vyzváni k jeho zadání
+- Pokud názvy importovaných projektů již existují, zobrazí se dialog pro každý duplicitní projekt s možnostmi:
+  - **Přejmenovat** — zobrazí se textový vstup s navrženým názvem (např. „Můj projekt (importováno)"), který můžete libovolně upravit
+  - **Přepsat** — nahradí existující projekt
+  - **Vytvořit duplicitu** — importuje se stejným názvem vedle existujícího projektu
+  - **Přeskočit** — tento projekt neimportovat
+- Chyby při importu se zobrazí jako vrstvené toast notifikace, aby byly všechny hlášky vidět najednou
 
 ## Přidávání souborů
 
@@ -215,4 +237,4 @@ StitchDeck ukládá všechna data lokálně ve vašem prohlížeči:
 
 ### Podpora prohlížečů
 
-StitchDeck funguje ve všech moderních prohlížečích — Chrome, Firefox, Safari a Edge. Vyžaduje zapnutý JavaScript a využívá moderní API prohlížeče (IndexedDB, Clipboard API, Drag & Drop API).
+StitchDeck funguje ve všech moderních prohlížečích — Chrome, Firefox, Safari a Edge. Vyžaduje zapnutý JavaScript a využívá moderní API prohlížeče (IndexedDB, Clipboard API, Drag & Drop API, Web Crypto API, CompressionStream).
