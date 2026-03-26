@@ -1,312 +1,312 @@
-Utilita pro slučování souborů pro LLM. utilita umí:
+A utility for merging files for LLMs. The utility can:
 
-## Správa projektů
+## Project Management
 
-* Spravovat projekty v levém panelu
-  - Vytvářet nové projekty přes modální dialog
-  - Přepínat mezi projekty kliknutím na název (pokud je otevřená nápověda, kliknutí na projekt ji zavře a zobrazí daný projekt)
-  - Přejmenovávat projekty inline (ikona tužky při hoveru)
-  - Mazat projekty s potvrzovacím dialogem (ikona ✕ při hoveru) — lze smazat i poslední projekt
-  - Projekty řazeny abecedně dle locale
-* Pokud nejsou žádné projekty, hlavní obsah zobrazí placeholder s tlačítkem „Nový projekt" na středu obrazovky
-* Persistentně ukládat data do IndexedDB — soubory přežijí zavření prohlížeče
-* Automaticky obnovit poslední aktivní projekt při spuštění aplikace (uloženo v localStorage)
-* Při prvním spuštění se automaticky vytvoří výchozí projekt („Default project" / „Výchozí projekt" dle jazyka)
+* Manage projects in the left panel
+  - Create new projects via a modal dialog
+  - Switch between projects by clicking on the name (if help is open, clicking on a project closes it and displays the selected project)
+  - Rename projects inline (pencil icon on hover)
+  - Delete projects with a confirmation dialog (✕ icon on hover) — the last project can also be deleted
+  - Projects sorted alphabetically by locale
+* If there are no projects, the main content displays a placeholder with a "New Project" button in the center of the screen
+* Persistently store data in IndexedDB — files survive browser closing
+* Automatically restore the last active project on startup (saved in localStorage)
+* On first launch, a default project is automatically created ("Default project" / "Výchozí projekt" depending on language)
 
-## Export a import projektů
+## Project Export and Import
 
-* Export projektů do komprimovaného souboru (.sdeck formát)
-  - Modální dialog pro výběr projektů k exportu (všechny nebo jen některé)
-  - Checkbox "Vybrat vše" s indeterminate stavem
-  - Volitelné heslo pro šifrování souboru (AES-256-GCM s PBKDF2 derivací klíče)
-  - Bez hesla se soubor pouze komprimuje (gzip), s heslem se navíc šifruje
-  - Stažení souboru jako `stitchdeck-export.sdeck`
-* Import projektů ze .sdeck souboru
-  - Automatická detekce šifrovaného souboru — výzva k zadání hesla
-  - Detekce duplicitních názvů projektů s dialogem pro volbu akce:
-    - Přepsat existující projekt
-    - Přejmenovat importovaný projekt (předvyplněný název s suffixem "(importováno)", uživatel může manuálně upravit)
-    - Vytvořit projekt s duplicitním názvem
-    - Přeskočit
-  - Chybové hlášky zobrazeny jako stacked toast notifikace (více chyb viditelných najednou)
-* Tlačítka Export/Import v hlavičce postranního panelu (sidebar) vedle tlačítka pro nový projekt — kompaktní ikonová tlačítka
-* Binární formát .sdeck: magic bytes "SDCK" + verze + příznak šifrování + [salt + iv + šifrovaná data] nebo [komprimovaná data]
-* Používá nativní Web Crypto API (PBKDF2, AES-GCM) a CompressionStream/DecompressionStream — žádné externí závislosti
-* Plná podpora i18n (EN/CS)
+* Export projects to a compressed file (.sdeck format)
+  - Modal dialog for selecting projects to export (all or selected)
+  - "Select all" checkbox with indeterminate state
+  - Optional password for file encryption (AES-256-GCM with PBKDF2 key derivation)
+  - Without a password the file is only compressed (gzip), with a password it is also encrypted
+  - File downloaded as `stitchdeck-export.sdeck`
+* Import projects from an .sdeck file
+  - Automatic detection of encrypted files — prompts for password
+  - Detection of duplicate project names with a dialog for choosing an action:
+    - Overwrite existing project
+    - Rename imported project (pre-filled name with "(imported)" suffix, user can manually edit)
+    - Create project with duplicate name
+    - Skip
+  - Error messages displayed as stacked toast notifications (multiple errors visible at once)
+* Export/Import buttons in the sidebar header next to the new project button — compact icon buttons
+* Binary .sdeck format: magic bytes "SDCK" + version + encryption flag + [salt + iv + encrypted data] or [compressed data]
+* Uses native Web Crypto API (PBKDF2, AES-GCM) and CompressionStream/DecompressionStream — no external dependencies
+* Full i18n support (EN/CS)
 
-## Nahrávání souborů
+## File Upload
 
-* Nahrávat soubory přetažením (drag & drop)
-  - Dropzona se zobrazí přes celou oblast hlavního obsahu (main-content) když projekt nemá žádné soubory
-  - Po přidání souborů se při přetahování zobrazí overlay přes celou viditelnou oblast main-content s fixní pozicí (neroste s obsahem)
-  - Dropzona má dashed border a inset glow efekt při hoveru/dragoveru
-* Zachytávat kompletní cesty souborů přes skrytý textarea při přetažení
-  - Používá `webkitRelativePath` pro zachování adresářové struktury
-  - Fallback na samotný název souboru pokud relativní cesta není dostupná
-  - Čistí cesty odstraněním `file://` prefixu a dekódováním URI komponent
+* Upload files via drag & drop
+  - Drop zone is displayed over the entire main content area when the project has no files
+  - After adding files, dragging shows an overlay over the entire visible main-content area with fixed positioning (does not grow with content)
+  - Drop zone has a dashed border and inset glow effect on hover/dragover
+* Capture complete file paths via a hidden textarea on drag
+  - Uses `webkitRelativePath` to preserve directory structure
+  - Falls back to the file name alone if relative path is unavailable
+  - Cleans paths by removing the `file://` prefix and decoding URI components
 
-## Seznam souborů
+## File List
 
-* Přepínač zobrazení seznamu souborů — režim seznam (list), dlaždice (tiles) a strom (tree) s přepínačem v toolbaru nad seznamem
-  - **Seznam (list)**: zobrazuje pořadové číslo, drag handle (⋮), ikonu souboru s barevným badge přípony, název souboru, cestu, metadata (velikost, počet řádků) a remove tlačítko
-  - **Dlaždice (tiles)**: grid layout (auto-fill, min 170px), kompaktně zobrazuje ikonu, název souboru (zkrácený pokud se nevejde), zkrácenou cestu (direction: rtl — zobrazuje konec cesty), velikost a indikátor řádků/PDF
-  - **Strom (tree)**: hierarchické zobrazení souborů seskupených podle adresářové struktury s rozbalovacími/sbalovacími složkami; složky řazeny abecedně před soubory; soubory zobrazují pořadové číslo, ikonu, název, metadata a remove tlačítko; stav sbalení/rozbalení složek přetrvává mezi překreslením; vlastní texty (custom text) zobrazeny na kořenové úrovni; drag & drop reorder funguje na jednotlivých souborech; kliknutím na pořadové číslo se zobrazí inline input pro manuální nastavení pozice (Enter potvrdí, Escape zruší, blur potvrdí)
-  - Ve všech režimech funguje číslování pořadí a drag & drop reorder
-  - Výchozí režim zobrazení je dlaždice (tiles)
-  - Preference režimu se ukládá do localStorage
-* Tooltip systém v režimu dlaždic
-  - Celá cesta se zobrazí jako tooltip při hoveru po 1 sekundě
-  - Tooltip se inteligentně repositionuje aby nepřesáhl viewport
-  - Tooltip se potlačí během přetahování
-* Barevně odlišit typ souboru v seznamu podle přípony
-  - HTML/XML/Latte: červené/oranžové tóny
-  - JavaScript/TypeScript: žluté/modré tóny
-  - PHP: fialová
-  - JSON/YAML: šedé/červené tóny
-  - CSS/SCSS/LESS: modré tóny
-  - Fallback: zelená
-* Řadit soubory přetažením v seznamu (drag & drop reorder)
-  - Přetahovaný soubor má sníženou průhlednost (35%) a scale 98%
-  - Cíl přetažení se zvýrazní accent barvou
-  - Po přeřazení se automaticky uloží do IndexedDB
-* Odebírat jednotlivé soubory tlačítkem ✕ (zobrazí se plynule při hoveru)
-* Lazy loading obsahu souborů
-  - Soubory se při nahrání nečtou ihned do textu
-  - Pole `content` je null, File objekt uložen v `_file`
-  - Při persistenci projektu se nepřečtené soubory konvertují na text
+* File list view toggle — list, tiles, and tree modes with a toggle in the toolbar above the list
+  - **List**: displays order number, drag handle (⋮), file icon with colored extension badge, file name, path, metadata (size, line count) and remove button
+  - **Tiles**: grid layout (auto-fill, min 170px), compactly displays icon, file name (truncated if it doesn't fit), shortened path (direction: rtl — shows end of path), size and lines/PDF indicator
+  - **Tree**: hierarchical file display grouped by directory structure with expandable/collapsible folders; folders sorted alphabetically before files; files display order number, icon, name, metadata and remove button; collapse/expand state persists between re-renders; custom texts displayed at root level; drag & drop reorder works on individual files; clicking the order number shows an inline input for manual position setting (Enter confirms, Escape cancels, blur confirms)
+  - Numbering and drag & drop reorder work in all modes
+  - Default view mode is tiles
+  - View mode preference is saved to localStorage
+* Tooltip system in tiles mode
+  - Full path shown as tooltip on hover after 1 second
+  - Tooltip intelligently repositions to stay within viewport
+  - Tooltip is suppressed during dragging
+* Color-coded file types in the list by extension
+  - HTML/XML/Latte: red/orange tones
+  - JavaScript/TypeScript: yellow/blue tones
+  - PHP: purple
+  - JSON/YAML: gray/red tones
+  - CSS/SCSS/LESS: blue tones
+  - Fallback: green
+* Reorder files by dragging in the list (drag & drop reorder)
+  - Dragged file has reduced opacity (35%) and 98% scale
+  - Drop target is highlighted with accent color
+  - After reordering, automatically saved to IndexedDB
+* Remove individual files with the ✕ button (appears smoothly on hover)
+* Lazy loading of file contents
+  - Files are not read into text immediately on upload
+  - `content` field is null, File object stored in `_file`
+  - Unread files are converted to text when persisting the project
 
-## Vlastní texty (custom text)
+## Custom Texts
 
-* Vkládat vlastní textové záznamy mezi soubory pomocí fialového tlačítka „Přidat text" v toolbaru
-* Modální dialog pro vytváření a editaci vlastních textů
-  - Nadpis (povinný, s validací a chybovou hláškou při prázdném)
-  - Pozice (číslo 1–N, default 1 pro nový, aktuální pozice pro editaci)
-  - Textarea pro obsah (volitelný)
-  - Přepínač „Vložit nadpis do exportu" (defaultně zapnutý)
-* Zobrazení ve výpisu vedle souborů s fialovým barevným odlišením (border, ikona, nadpis)
-  - V režimu seznam: zobrazují nadpis místo názvu souboru a náhled obsahu místo cesty
-  - V režimu dlaždice: stejný layout s fialovou ikonou tužky
-* Editace kliknutím na fialovou ikonu tužky (při hoveru se zvýrazní a zvětší) nebo dvojklikem na celou dlaždici
-* Při sloučení se chovají jako .md soubory (plaintext, bez syntax highlightingu)
-* Nadpisy vlastních textů jsou ve výstupu zvýrazněny fialově (#a78bfa)
-* Podporují drag & drop řazení spolu s ostatními soubory
-* Persistentně se ukládají do IndexedDB jako součást projektu
+* Add custom text entries among files using the purple "Add text" button in the toolbar
+* Modal dialog for creating and editing custom texts
+  - Title (required, with validation and error message when empty)
+  - Position (number 1–N, default 1 for new, current position for editing)
+  - Textarea for content (optional)
+  - Toggle "Include title in export" (enabled by default)
+* Displayed in the list alongside files with purple color distinction (border, icon, title)
+  - In list mode: shows title instead of file name and content preview instead of path
+  - In tiles mode: same layout with purple pencil icon
+* Edit by clicking the purple pencil icon (highlights and enlarges on hover) or double-clicking the entire tile
+* When merged, they behave as .md files (plaintext, no syntax highlighting)
+* Custom text titles are highlighted in purple (#a78bfa) in the output
+* Support drag & drop ordering together with other files
+* Persistently saved to IndexedDB as part of the project
 
-## Slučování a výstup
+## Merging and Output
 
-* Sloučit všechny soubory do jednoho textového výstupu ve formátu `cesta:\nobsah`
-* Přepínače pro ovládání výstupu (s persistencí do localStorage)
-  - Zapnutí/vypnutí vkládání cesty k souboru (defaultně vypnutý)
-  - Oříznutí prázdných řádků na začátku a konci obsahu každého souboru (defaultně vypnutý)
-  - LLM-optimalizovaný formát (defaultně zapnutý) — přidá `<file_map>` s číslovaným seznamem souborů na začátek a obalí obsah každého souboru do `<file path="...">...</file>` XML tagů (inspirováno Repomix formátem, optimální pro Claude, GPT i Gemini)
-  - Přepínače „Include file paths" a „LLM-optimized format" se vzájemně vylučují — zapnutí jednoho automaticky vypne druhý; při inicializaci má přednost LLM formát
-  - Komprese exportu pro LLM (defaultně vypnutý) — odstraní komentáře (řádkové i blokové pro C-style, hash, HTML a SQL jazyky), zkolabuje po sobě jdoucí prázdné řádky, zredukuje odsazení (4 mezery→2, taby→2 mezery, kromě Pythonu), ořízne trailing whitespace; markdown a plaintext se pouze kolabují prázdné řádky (komentáře jsou obsah)
-  - Bezpečnostní sken před sloučením (defaultně zapnutý) — před sloučením prohledá obsah souborů a detekuje potenciální tajné klíče, tokeny, hesla, privátní klíče, connection stringy a další citlivé údaje; při nálezu zobrazí modální varování s tabulkou nálezů (soubor, řádek, typ, detail, maskovaná shoda) a checkboxem u každého nálezu pro volbu nahrazení; zaškrtnuté secrety se ve výstupu nahradí náhodným řetězcem, nezaškrtnuté zůstanou; checkbox „vybrat vše" v záhlaví; zdrojové soubory se nemění — nahrazení se aplikuje pouze na output; uživatel může sloučení také zrušit
-  - Převod PDF dokumentů na text — zobrazí se jen pokud je v seznamu alespoň jeden PDF soubor (defaultně zapnutý)
-* Zobrazení sloučeného výstupu
-  - Číslování řádků (čísla nejsou součástí textu — nejdou kopírovat, nejsou v selekci)
-  - Omezení na 20 000 řádků s upozorněním na zkrácení
-  - Syntax highlighting podle typu souboru
+* Merge all files into a single text output in `path:\ncontent` format
+* Output control toggles (with localStorage persistence)
+  - Enable/disable file path insertion (disabled by default)
+  - Trim empty lines at the beginning and end of each file's content (disabled by default)
+  - LLM-optimized format (enabled by default) — adds `<file_map>` with a numbered file list at the beginning and wraps each file's content in `<file path="...">...</file>` XML tags (inspired by Repomix format, optimal for Claude, GPT and Gemini)
+  - "Include file paths" and "LLM-optimized format" toggles are mutually exclusive — enabling one automatically disables the other; on initialization, LLM format takes priority
+  - Export compression for LLM (disabled by default) — removes comments (line and block for C-style, hash, HTML and SQL languages), collapses consecutive blank lines, reduces indentation (4 spaces→2, tabs→2 spaces, except Python), trims trailing whitespace; markdown and plaintext only collapse blank lines (comments are content)
+  - Security scan before merging (enabled by default) — before merging, scans file contents and detects potential secret keys, tokens, passwords, private keys, connection strings and other sensitive data; on detection shows a modal warning with a findings table (file, line, type, detail, masked match) and a checkbox for each finding to choose replacement; checked secrets are replaced with a random string in the output, unchecked ones remain; "select all" checkbox in the header; source files are not modified — replacements apply only to the output; user can also cancel the merge
+  - PDF to text conversion — shown only if there is at least one PDF file in the list (enabled by default)
+* Merged output display
+  - Line numbering (numbers are not part of the text — cannot be copied, not in selection)
+  - Limited to 20,000 lines with a truncation warning
+  - Syntax highlighting by file type
 * Syntax highlighting
-  - Podporované jazyky: HTML/HTM, XML/SVG, JS/MJS/CJS, TS, TSX/JSX, PHP, JSON, YAML/YML, NEON, Latte, Blade, Vue, Svelte, CSS/SCSS/LESS, Python, Ruby, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Scala, Perl, R, Bash/Shell/Zsh, SQL, Lua, Dart, Haskell, Objective-C, Groovy/Gradle, PowerShell, Dockerfile, INI/TOML/conf, Markdown
-  - Jazyk se detekuje z přípony v hlavičce každé sekce
-  - Názvy souborů zvýrazněny neonově zeleně (#27db0f)
-  - Highlighting je čistě vizuální — není součástí kopírovaného ani staženého textu
-  - Používá knihovnu highlight.js
-* Metadata výstupu — zobrazuje počet souborů, řádků, velikost a odhadovaný počet tokenů pro LLM (knihovna tokenx)
+  - Supported languages: HTML/HTM, XML/SVG, JS/MJS/CJS, TS, TSX/JSX, PHP, JSON, YAML/YML, NEON, Latte, Blade, Vue, Svelte, CSS/SCSS/LESS, Python, Ruby, Java, C, C++, C#, Go, Rust, Swift, Kotlin, Scala, Perl, R, Bash/Shell/Zsh, SQL, Lua, Dart, Haskell, Objective-C, Groovy/Gradle, PowerShell, Dockerfile, INI/TOML/conf, Markdown
+  - Language is detected from the extension in each section's header
+  - File names highlighted in neon green (#27db0f)
+  - Highlighting is purely visual — not part of copied or downloaded text
+  - Uses the highlight.js library
+* Output metadata — displays file count, line count, size and estimated token count for LLM (tokenx library)
 
-## Kopírování a stahování
+## Copying and Downloading
 
-* Zkopírovat sloučený obsah do schránky (bez čísel řádků a bez syntax highlightingu)
-  - Používá nativní Clipboard API (`navigator.clipboard.writeText`)
-  - Pokud kopírování selže, zobrazí se upozornění
-* Stáhnout sloučený obsah jako textový soubor
-  - Modální dialog pro volbu názvu souboru a formátu
-  - Podporované formáty: txt, md, json, xml, csv, html, log
-  - Výchozí název `merged-files`, výchozí formát `.txt`
-  - MIME typy nastaveny odpovídajícím způsobem
-* Stáhnout jako PDF (tlačítko „Download PDF" se zobrazí pokud je v seznamu alespoň jeden PDF soubor)
-  - Pokud jsou všechny soubory PDF, sloučí se do jednoho PDF (kopíruje všechny stránky)
-  - Pokud jsou v seznamu i textové soubory, obsah se převede na PDF stránky (Courier, A4, automatické zalamování řádků, auto-paginace)
-  - Nepodporované znaky se nahradí otazníkem
-  - Používá knihovnu pdf-lib
+* Copy merged content to clipboard (without line numbers and without syntax highlighting)
+  - Uses native Clipboard API (`navigator.clipboard.writeText`)
+  - If copying fails, a warning is displayed
+* Download merged content as a text file
+  - Modal dialog for choosing file name and format
+  - Supported formats: txt, md, json, xml, csv, html, log
+  - Default name `merged-files`, default format `.txt`
+  - MIME types set accordingly
+* Download as PDF ("Download PDF" button shown if there is at least one PDF file in the list)
+  - If all files are PDFs, they are merged into a single PDF (copies all pages)
+  - If there are also text files in the list, content is converted to PDF pages (Courier, A4, automatic line wrapping, auto-pagination)
+  - Unsupported characters are replaced with a question mark
+  - Uses the pdf-lib library
 
-## PDF zpracování
+## PDF Processing
 
-* Automatická detekce PDF souborů v seznamu (dle přípony `.pdf`)
-* Binární data uložena jako base64 string v poli `pdfData`
-* Extrakce textu z PDF (pomocí pdfjs-dist)
-  - Řadí textové prvky podle vizuální pozice (Y shora dolů, X zleva doprava)
-  - Seskupuje prvky do řádků na základě výšky fontu
-  - Vkládá mezery/tabulátory podle horizontálních vzdáleností mezi prvky
-  - Vícestránkové dokumenty spojeny s prázdnými řádky mezi stránkami
-* Když je přepínač „Převést PDF na text" vypnutý, zobrazí se placeholder `[PDF – binární obsah]`
+* Automatic detection of PDF files in the list (by `.pdf` extension)
+* Binary data stored as a base64 string in the `pdfData` field
+* Text extraction from PDF (using pdfjs-dist)
+  - Sorts text elements by visual position (Y top to bottom, X left to right)
+  - Groups elements into lines based on font height
+  - Inserts spaces/tabs based on horizontal distances between elements
+  - Multi-page documents joined with blank lines between pages
+* When the "Convert PDF to text" toggle is off, a placeholder `[PDF – binary content]` is displayed
 
-## GitHub integrace
+## GitHub Integration
 
-* Tlačítko „GitHub" v toolbaru otevře modální dialog pro nastavení propojení
-* Nastavení propojení
-  - Repository: owner/repo nebo plná URL (automaticky stripuje `.git` suffix)
-  - Volitelný access token pro soukromé repozitáře
-  - Výběr větve s možností načtení seznamu větví z API (zobrazí se jako klikatelné chipy)
-* Exclude pravidla přes stromovou strukturu repozitáře
-  - Načítá se tlačítkem „Load folders" z GitHub API (Trees API s recursive=1)
-  - Zobrazuje adresáře i soubory (adresáře řazeny první, soubory s barevnými ikonami dle přípony)
-  - Stromová struktura má vizuální vodící čáry
-  - Názvy zachovávají originální velikost písmen z repozitáře
-  - Zaškrtnuté položky mají přeškrtnutý text
-  - Kliknutí na šipku rozbalí/sbalí adresář bez zaškrtnutí checkboxu
-  - Kaskádní zaškrtávání rodič/potomek a indeterminate stav
-* .gitignore podpora
-  - Parsuje všechny .gitignore soubory v repozitáři a respektuje jejich pravidla
-  - Podporuje `**`, `*`, `?`, `/` anchoring, directory-only patterny (trailing `/`), negaci (`!`), character classes (`[abc]`), escaped znaky (`\#`, `\!`, `\ `), automatický anchoring patternů obsahujících `/`
-  - Custom excludes se aplikují nad rámec .gitignore pravidel
-* Automatické přeskakování binárních souborů (obrázky, fonty, archivy, spustitelné soubory atd.)
-* Modální dialog má tři tlačítka: Cancel, Save (uloží bez synchronizace), Save & sync / Connect & sync (uloží a provede sync)
-* Stavový řádek po připojení
-  - Zobrazí se pod toolbarem s GitHub logem, názvem repozitáře a aktuální větví
-  - Tlačítka: synchronizace (aktualizuje soubory), nastavení (otevře dialog s předvyplněnými hodnotami), odpojení
-  - Při přepnutí projektu se aktualizuje podle uloženého GitHub propojení daného projektu
-* Synchronizace
-  - Soubory se stahují přes raw.githubusercontent.com v dávkách po 10 pro optimální výkon
-  - Nahradí pouze soubory s `source: 'github'` novými z GitHubu
-  - Manuálně vložené soubory (`source: 'manual'`) a vlastní texty zůstávají na svých pozicích včetně pořadí
-  - Pokud by po synchronizaci pozice manuálních souborů přesahovaly celkový počet položek, automaticky se přepočítají
-  - Průběh synchronizace zobrazuje modální okno s progress barem a informací o stavu
-* Nastavení GitHub propojení se ukládá do IndexedDB jako součást projektu (interface GitHubConfig: owner, repo, branch, token, customExcludes)
-* Plná podpora i18n (EN/CS)
+* "GitHub" button in the toolbar opens a modal dialog for connection settings
+* Connection settings
+  - Repository: owner/repo or full URL (automatically strips `.git` suffix)
+  - Optional access token for private repositories
+  - Branch selection with the ability to load branch list from the API (displayed as clickable chips)
+* Exclude rules via repository tree structure
+  - Loaded via the "Load folders" button from GitHub API (Trees API with recursive=1)
+  - Displays directories and files (directories sorted first, files with colored icons by extension)
+  - Tree structure has visual guide lines
+  - Names preserve original casing from the repository
+  - Checked items have strikethrough text
+  - Clicking the arrow expands/collapses a directory without checking the checkbox
+  - Cascading parent/child checking and indeterminate state
+* .gitignore support
+  - Parses all .gitignore files in the repository and respects their rules
+  - Supports `**`, `*`, `?`, `/` anchoring, directory-only patterns (trailing `/`), negation (`!`), character classes (`[abc]`), escaped characters (`\#`, `\!`, `\ `), automatic anchoring of patterns containing `/`
+  - Custom excludes are applied on top of .gitignore rules
+* Automatic skipping of binary files (images, fonts, archives, executables, etc.)
+* Modal dialog has three buttons: Cancel, Save (saves without syncing), Save & sync / Connect & sync (saves and performs sync)
+* Status bar after connection
+  - Displayed below the toolbar with the GitHub logo, repository name and current branch
+  - Buttons: sync (updates files), settings (opens dialog with pre-filled values), disconnect
+  - When switching projects, updates according to the saved GitHub connection of that project
+* Synchronization
+  - Files are downloaded via raw.githubusercontent.com in batches of 10 for optimal performance
+  - Replaces only files with `source: 'github'` with new ones from GitHub
+  - Manually added files (`source: 'manual'`) and custom texts remain in their positions including order
+  - If manual file positions would exceed the total item count after sync, they are automatically recalculated
+  - Sync progress shows a modal window with a progress bar and status information
+* GitHub connection settings are saved to IndexedDB as part of the project (interface GitHubConfig: owner, repo, branch, token, customExcludes)
+* Full i18n support (EN/CS)
 
-## Toolbar a akce
+## Toolbar and Actions
 
-* Toolbar se seznamem souborů (view toggle, přidat text, GitHub) je vždy viditelný — i když projekt ještě nemá žádné soubory
-* Vymazat vše (soubory i výstup) jedním tlačítkem — s potvrzovacím dialogem
+* Toolbar with file list (view toggle, add text, GitHub) is always visible — even when the project has no files yet
+* Clear all (files and output) with a single button — with a confirmation dialog
 
-## Notifikace a modální okna
+## Notifications and Modals
 
-* Toast notifikace pro zpětnou vazbu uživateli
-  - Pozicované dole uprostřed v kontejneru, pill shape s border a backdrop blur
-  - Podpora více toast notifikací zobrazených současně (stacking) — nové se zobrazují nad předchozími
-  - Úspěšné akce: zelené accent pozadí a text, prefix ✓
-  - Chybové akce: červené accent pozadí a text
-  - Varovné: neutrální styl
-  - Auto-dismiss po 3.5 sekundě (každý toast nezávisle)
-* Modální okna pro akce
-  - Backdrop blur efekt
-  - Zavření kliknutím na pozadí nebo klávesou ESC
-  - Enter v input poli potvrdí akci
-  - Podpora validace a zobrazení chyb
-  - Varianta `modal--large` pro GitHub a custom text dialogy
+* Toast notifications for user feedback
+  - Positioned at the bottom center in a container, pill shape with border and backdrop blur
+  - Support for multiple toast notifications displayed simultaneously (stacking) — new ones appear above previous ones
+  - Success actions: green accent background and text, ✓ prefix
+  - Error actions: red accent background and text
+  - Warning: neutral style
+  - Auto-dismiss after 3.5 seconds (each toast independently)
+* Modal windows for actions
+  - Backdrop blur effect
+  - Close by clicking the background or pressing ESC
+  - Enter in input field confirms the action
+  - Validation and error display support
+  - `modal--large` variant for GitHub and custom text dialogs
 
-## Animace
+## Animations
 
-* Při aktualizaci již nahraného souboru vizuální efekt
-  - Starý box se rozpadne na 18 zelených částic (particle burst) různých odstínů, které se rozletí do okolí s rotací (trvání 350–600ms)
-  - Nový box se nafoukne jako bublina (grow-in animace): start na 30% scale → 102% → 100%, trvání 450ms s cubic-bezier easing
-* Jemné přechodové animace celkově 150ms cubic-bezier(.4,0,.2,1)
+* Visual effect when updating an already uploaded file
+  - Old box breaks apart into 18 green particles (particle burst) of various shades that fly outward with rotation (duration 350–600ms)
+  - New box inflates like a bubble (grow-in animation): starts at 30% scale → 102% → 100%, duration 450ms with cubic-bezier easing
+* Subtle transition animations overall 150ms cubic-bezier(.4,0,.2,1)
 
-## Internacionalizace (i18n)
+## Internationalization (i18n)
 
-* Podpora více jazyků s přepínačem v horní liště
-  - Výchozí jazyk angličtina, dostupné jazyky: EN, CS
-  - Přepínač tlačítky v pravém horním rohu, aktivní jazyk zvýrazněn accent barvou
-* Překlad používá slovníkový systém s `t(key, params)` funkcí
-  - Statické HTML prvky mají `data-i18n` atributy, title atributy `data-i18n-title`
-  - Parametrická substituce `{paramName}` v překladech
-  - Fallback na angličtinu pokud překlad chybí
-* Jazyková preference se ukládá do localStorage
-* Při změně jazyka se automaticky překreslí veškeré UI texty
+* Multi-language support with a switcher in the top bar
+  - Default language English, available languages: EN, CS
+  - Switcher buttons in the top right corner, active language highlighted with accent color
+* Translation uses a dictionary system with `t(key, params)` function
+  - Static HTML elements have `data-i18n` attributes, title attributes `data-i18n-title`
+  - Parameter substitution `{paramName}` in translations
+  - Fallback to English if translation is missing
+* Language preference is saved to localStorage
+* On language change, all UI texts are automatically re-rendered
 
-## Nápověda
+## Help
 
-* Tlačítko nápovědy v patičce panelu projektů (sidebar) s ikonou otazníku
-* Kliknutí otevře stránku s dokumentací, která nahradí hlavní obsah
-* Přímý odkaz na nápovědu přes `#help` v URL — umožňuje sdílení odkazu a přímý přístup bez proklikávání aplikací
-  - Při otevření nápovědy se URL aktualizuje na `#help` (přes `history.pushState`)
-  - Při zavření nápovědy se hash odstraní
-  - Při načtení stránky s `#help` v URL se nápověda automaticky zobrazí
-  - Navigace zpět/vpřed v prohlížeči správně přepíná mezi nápovědou a aplikací
-* Dokumentace uložena v samostatných .md souborech pro každý jazyk (`src/docs/en.md`, `src/docs/cs.md`) — snadné přidání dalších jazyků
-* Jednoduchý markdown parser převádí .md na HTML (h1–h3, odstavce, seznamy, bold, inline code)
-* Dokumentace obsahuje sekce: Začínáme, Projekty, Přidávání souborů, Seznam souborů, Vlastní texty, Slučování a export, GitHub integrace, Tipy a klávesy
-* Postranní navigace je vždy viditelná (fixní panel vlevo vedle scrollovatelného obsahu)
-* Aktivní sekce se zvýrazní v navigaci při scrollování
-* Tlačítko „Zpět do aplikace" pro návrat do hlavního zobrazení
-* Responsivní — na mobilu se navigace zobrazí nad obsahem
+* Help button in the sidebar footer with a question mark icon
+* Clicking opens a documentation page that replaces the main content
+* Direct link to help via `#help` in URL — allows sharing and direct access without clicking through the app
+  - When opening help, URL updates to `#help` (via `history.pushState`)
+  - When closing help, the hash is removed
+  - When loading the page with `#help` in URL, help is automatically displayed
+  - Browser back/forward navigation correctly toggles between help and the application
+* Documentation stored in separate .md files for each language (`src/docs/en.md`, `src/docs/cs.md`) — easy to add more languages
+* Simple markdown parser converts .md to HTML (h1–h3, paragraphs, lists, bold, inline code)
+* Documentation contains sections: Getting Started, Projects, Adding Files, File List, Custom Texts, Merging and Export, GitHub Integration, Tips and Shortcuts
+* Side navigation is always visible (fixed panel to the left of scrollable content)
+* Active section is highlighted in navigation while scrolling
+* "Back to app" button to return to the main view
+* Responsive — on mobile, navigation is displayed above the content
 
-## Světlý/tmavý režim
+## Light/Dark Mode
 
-* Přepínač v horní liště — tlačítko s ikonami slunce (pro přepnutí na light) a měsíce (pro přepnutí na dark)
-* Preference se ukládá do localStorage, výchozí režim tmavý
-* Přepnutí aplikuje třídu `light` na `<html>` element s přepsáním CSS proměnných
+* Toggle in the top bar — button with sun (to switch to light) and moon (to switch to dark) icons
+* Preference is saved to localStorage, default mode is dark
+* Switching applies the `light` class to the `<html>` element with CSS variable overrides
 
 ## Design
 
-* Tmavý (dark) a světlý (light) theme s propracovanou barevnou paletou
-  - Dark: černé pozadí (#09090b), povrchové úrovně (#131316, #1a1a1f, #222228), zelený accent (#22c55e)
-  - Light: světlé pozadí (#f5f5f7), bílé povrchy (#ffffff), tmavší zelený accent (#16a34a)
-* Layout: flexbox, top bar + sidebar (260px, fixní výška viewportu, nescrolluje se s obsahem) + main content
-* Typografie: Inter (UI text), JetBrains Mono (kód, metadata)
-* SVG ikony v tlačítkách místo emoji — merge, download, copy, upload ikony
-* Logo v top baru s gradientním zeleným pozadím a stylizovaným písmenem S
-* Tlačítka s SVG ikonami uvnitř `<span data-i18n>` pro správnou funkci překladů
-* Scrollbary — sjednocené globálně přes CSS proměnné `--scroll-thumb`/`--scroll-thumb-hover`, dobře viditelné v obou režimech (dark i light)
-* Soubory v seznamu s plynulým zobrazováním remove tlačítka na hover
+* Dark and light theme with an elaborate color palette
+  - Dark: black background (#09090b), surface levels (#131316, #1a1a1f, #222228), green accent (#22c55e)
+  - Light: light background (#f5f5f7), white surfaces (#ffffff), darker green accent (#16a34a)
+* Layout: flexbox, top bar + sidebar (260px, fixed viewport height, does not scroll with content) + main content
+* Typography: Inter (UI text), JetBrains Mono (code, metadata)
+* SVG icons in buttons instead of emoji — merge, download, copy, upload icons
+* Logo in the top bar with a gradient green background and stylized letter S
+* Buttons with SVG icons inside `<span data-i18n>` for proper translation functionality
+* Scrollbars — unified globally via CSS variables `--scroll-thumb`/`--scroll-thumb-hover`, well visible in both modes (dark and light)
+* Files in the list with smooth remove button appearance on hover
 
-## SEO optimalizace
+## SEO Optimization
 
-* Meta tagy: description, keywords, author, robots, theme-color
-* Open Graph tagy (og:type, og:title, og:description, og:site_name, og:locale s alternativou cs_CZ)
-* Twitter Card tagy (summary card s title a description)
-* Structured Data (JSON-LD) — schema.org WebApplication s featureList a cenou (zdarma)
-* `<noscript>` blok s plným textovým popisem aplikace a funkcí pro vyhledávače, které neexekuují JS
-* Dynamický `lang` atribut na `<html>` — nastavuje se při inicializaci a při přepnutí jazyka
-* `robots.txt` v `public/` povolující indexaci
-* Optimalizovaný `<title>` s klíčovými slovy (StitchDeck — Merge Files for LLM | AI-Optimized File Merger)
+* Meta tags: description, keywords, author, robots, theme-color
+* Open Graph tags (og:type, og:title, og:description, og:site_name, og:locale with cs_CZ alternative)
+* Twitter Card tags (summary card with title and description)
+* Structured Data (JSON-LD) — schema.org WebApplication with featureList and price (free)
+* `<noscript>` block with full text description of the app and features for search engines that don't execute JS
+* Dynamic `lang` attribute on `<html>` — set on initialization and on language switch
+* `robots.txt` in `public/` allowing indexing
+* Optimized `<title>` with keywords (StitchDeck — Merge Files for LLM | AI-Optimized File Merger)
 
-## Technický stack
+## Technical Stack
 
 * **Build**: Vite 8 (Rolldown) + TypeScript (strict mode, ES2020 target)
-* **Závislosti**: highlight.js (syntax highlighting), pdf-lib (PDF operace), pdfjs-dist (extrakce textu z PDF), tokenx (počítání tokenů), GitHub REST API (fetch repozitářů, bez externích knihoven)
-* **Struktura projektu**:
-  - `index.html` — HTML šablona
-  - `src/main.ts` — vstupní bod, inicializace všech systémů
-  - `src/styles/main.css` — všechny styly
-  - `src/i18n.ts` — překlady a i18n funkce
-  - `src/db.ts` — IndexedDB operace, typy (FileEntry, Project, GitHubConfig)
-  - `src/state.ts` — sdílený stav aplikace (files, fullMergedContent, dragSrcIndex, renderGeneration, currentProjectId, saveTimeout, viewMode)
-  - `src/dom.ts` — reference na DOM elementy
-  - `src/helpers.ts` — utility funkce (escapeHtml, formatSize, countTokens, formatTokens, cleanPath, readFile, getExtColor, getLanguage)
-  - `src/toast.ts` — toast notifikace
-  - `src/modal.ts` — modální dialogy (generický komponent s validací)
-  - `src/animations.ts` — particle burst a grow-in animace
-  - `src/projects.ts` — správa projektů (CRUD, persistence, přepínání)
-  - `src/export-import.ts` — export a import projektů (komprese, šifrování, UI dialogy, řešení duplicit)
-  - `src/file-list.ts` — renderování seznamu souborů, drag & drop reorder, custom text dialogy
-  - `src/dropzone.ts` — drag & drop nahrávání souborů
-  - `src/merge.ts` — slučování, kopírování, stahování (text i PDF), clear all
-  - `src/pdf.ts` — PDF binární konverze utility
-  - `src/github.ts` — GitHub API integrace (fetch repozitáře, .gitignore parsing, synchronizace, stromová struktura)
-  - `src/github-init.ts` — inicializace GitHub UI eventů (tlačítka, odpojení)
-  - `src/lang-switcher.ts` — přepínač jazyků
-  - `src/theme-toggle.ts` — přepínač světlého/tmavého režimu
-  - `src/help.ts` — stránka nápovědy s markdown parserem a navigací
-  - `src/docs/en.md` — dokumentace v angličtině
-  - `src/docs/cs.md` — dokumentace v češtině
-  - `public/robots.txt` — robots.txt pro vyhledávače
+* **Dependencies**: highlight.js (syntax highlighting), pdf-lib (PDF operations), pdfjs-dist (PDF text extraction), tokenx (token counting), GitHub REST API (repository fetching, no external libraries)
+* **Project structure**:
+  - `index.html` — HTML template
+  - `src/main.ts` — entry point, initialization of all systems
+  - `src/styles/main.css` — all styles
+  - `src/i18n.ts` — translations and i18n functions
+  - `src/db.ts` — IndexedDB operations, types (FileEntry, Project, GitHubConfig)
+  - `src/state.ts` — shared application state (files, fullMergedContent, dragSrcIndex, renderGeneration, currentProjectId, saveTimeout, viewMode)
+  - `src/dom.ts` — DOM element references
+  - `src/helpers.ts` — utility functions (escapeHtml, formatSize, countTokens, formatTokens, cleanPath, readFile, getExtColor, getLanguage)
+  - `src/toast.ts` — toast notifications
+  - `src/modal.ts` — modal dialogs (generic component with validation)
+  - `src/animations.ts` — particle burst and grow-in animations
+  - `src/projects.ts` — project management (CRUD, persistence, switching)
+  - `src/export-import.ts` — project export and import (compression, encryption, UI dialogs, duplicate handling)
+  - `src/file-list.ts` — file list rendering, drag & drop reorder, custom text dialogs
+  - `src/dropzone.ts` — drag & drop file upload
+  - `src/merge.ts` — merging, copying, downloading (text and PDF), clear all
+  - `src/pdf.ts` — PDF binary conversion utilities
+  - `src/github.ts` — GitHub API integration (repository fetching, .gitignore parsing, synchronization, tree structure)
+  - `src/github-init.ts` — GitHub UI event initialization (buttons, disconnect)
+  - `src/lang-switcher.ts` — language switcher
+  - `src/theme-toggle.ts` — light/dark mode toggle
+  - `src/help.ts` — help page with markdown parser and navigation
+  - `src/docs/en.md` — documentation in English
+  - `src/docs/cs.md` — documentation in Czech
+  - `public/robots.txt` — robots.txt for search engines
 
 ## Persistence
 
-* **IndexedDB** (databáze `stitchdeck`, verze 1, object store `projects`)
-  - Ukládá projekty se soubory a GitHub konfigurací
-  - Operace: getAllProjects, getProject, saveProject, deleteProjectFromDB
-* **localStorage** klíče:
-  - `stitchdeck_viewMode` — režim zobrazení (list/tiles/tree)
-  - `stitchdeck_togglePaths` — vkládání cest do výstupu
-  - `stitchdeck_toggleTrimEmpty` — ořezávání prázdných řádků
-  - `stitchdeck_togglePdfToText` — extrakce textu z PDF
-  - `stitchdeck_toggleCompress` — komprese exportu pro LLM
-  - `stitchdeck_toggleSecurityScan` — bezpečnostní sken před sloučením
-  - `stitchdeck_toggleFileMap` — vložení mapy souborů na začátek
-  - `stitchdeck_lang` — jazyk (en/cs)
-  - `stitchdeck_theme` — téma (dark/light)
-  - `stitchdeck_activeProject` — ID posledního aktivního projektu
+* **IndexedDB** (database `stitchdeck`, version 1, object store `projects`)
+  - Stores projects with files and GitHub configuration
+  - Operations: getAllProjects, getProject, saveProject, deleteProjectFromDB
+* **localStorage** keys:
+  - `stitchdeck_viewMode` — view mode (list/tiles/tree)
+  - `stitchdeck_togglePaths` — path insertion in output
+  - `stitchdeck_toggleTrimEmpty` — trimming empty lines
+  - `stitchdeck_togglePdfToText` — PDF text extraction
+  - `stitchdeck_toggleCompress` — export compression for LLM
+  - `stitchdeck_toggleSecurityScan` — security scan before merging
+  - `stitchdeck_toggleFileMap` — file map insertion at the beginning
+  - `stitchdeck_lang` — language (en/cs)
+  - `stitchdeck_theme` — theme (dark/light)
+  - `stitchdeck_activeProject` — ID of the last active project
