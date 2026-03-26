@@ -4,14 +4,14 @@ Utilita pro slučování souborů pro LLM. utilita umí:
 
 * Spravovat projekty v levém panelu
   - Vytvářet nové projekty přes modální dialog
-  - Přepínat mezi projekty kliknutím na název
+  - Přepínat mezi projekty kliknutím na název (pokud je otevřená nápověda, kliknutí na projekt ji zavře a zobrazí daný projekt)
   - Přejmenovávat projekty inline (ikona tužky při hoveru)
   - Mazat projekty s potvrzovacím dialogem (ikona ✕ při hoveru) — lze smazat i poslední projekt
   - Projekty řazeny abecedně dle locale
 * Pokud nejsou žádné projekty, hlavní obsah zobrazí placeholder s tlačítkem „Nový projekt" na středu obrazovky
 * Persistentně ukládat data do IndexedDB — soubory přežijí zavření prohlížeče
 * Automaticky obnovit poslední aktivní projekt při spuštění aplikace (uloženo v localStorage)
-* Při prvním spuštění (bez projektů) zobrazí placeholder s výzvou k vytvoření projektu
+* Při prvním spuštění se automaticky vytvoří výchozí projekt („Default project" / „Výchozí projekt" dle jazyka)
 
 ## Export a import projektů
 

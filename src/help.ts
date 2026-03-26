@@ -226,7 +226,7 @@ export function showHelp(): void {
     }
 }
 
-function hideHelp(): void {
+export function hideHelp(): void {
     helpPage.classList.remove('visible');
     mainContentEl.style.display = '';
     if (window.location.hash === '#help') {

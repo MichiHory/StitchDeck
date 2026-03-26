@@ -6,6 +6,7 @@ import { t, getCurrentLang } from './i18n';
 import { showModal } from './modal';
 import { toast } from './toast';
 import { renderFileList } from './file-list';
+import { isHelpVisible, hideHelp } from './help';
 import {
     projectListEl, outputContent, lineNumbers,
     outputSection, truncationWarning,
@@ -111,6 +112,10 @@ export async function renderProjectList(): Promise<void> {
         `;
         el.addEventListener('click', async (e) => {
             if ((e.target as HTMLElement).closest('.project-action-btn')) return;
+            if (isHelpVisible()) {
+                hideHelp();
+                if (p.id === state.currentProjectId) return;
+            }
             if (p.id === state.currentProjectId) return;
             await persistCurrentProject();
             await switchToProject(p.id);
@@ -187,12 +192,15 @@ export async function createNewProject(): Promise<void> {
 }
 
 export async function initProjects(): Promise<void> {
-    const projects = await getAllProjects();
+    let projects = await getAllProjects();
     if (projects.length === 0) {
-        state.currentProjectId = null;
-        showNoProjectState();
-        await renderProjectList();
-        return;
+        const id = generateId();
+        const name = t('defaultProject');
+        await saveProject({ id, name, files: [] });
+        state.currentProjectId = id;
+        localStorage.setItem('stitchdeck_activeProject', id);
+        state.files = [];
+        projects = await getAllProjects();
     }
     const savedId = localStorage.getItem('stitchdeck_activeProject');
     const exists = projects.find(p => p.id === savedId);
