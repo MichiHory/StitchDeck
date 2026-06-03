@@ -1,5 +1,6 @@
 import { getAllProjects, saveProject, generateId } from './db';
 import type { Project } from './db';
+import { ensureEntryIds, buildSubItems, detachProject } from './inheritance';
 import { escapeHtml } from './helpers';
 import { t } from './i18n';
 import { toast } from './toast';
@@ -9,7 +10,7 @@ import { switchToProject, renderProjectList, persistCurrentProject } from './pro
 
 const MIN_PASSWORD_LEN = 6;
 const MAGIC = new Uint8Array([0x53, 0x44, 0x43, 0x4B]); // "SDCK"
-const VERSION = 1;
+const VERSION = 2;
 const SALT_LEN = 16;
 const IV_LEN = 12;
 
@@ -96,7 +97,7 @@ async function unpackImport(data: Uint8Array, password?: string): Promise<Unpack
         if (data[i] !== MAGIC[i]) throw new Error('invalid_format');
     }
     const version = data[MAGIC.length];
-    if (version !== VERSION) throw new Error('invalid_format');
+    if (version !== 1 && version !== 2) throw new Error('invalid_format');
 
     const encrypted = data[MAGIC.length + 1] === 0x01;
     const payloadStart = MAGIC.length + 2;
@@ -147,13 +148,16 @@ export async function showExportDialog(): Promise<void> {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
 
-    const projectCheckboxes = projects.map(p =>
-        `<label class="export-project-item">
-            <input type="checkbox" value="${escapeHtml(p.id)}" checked>
+    const byId = new Map(projects.map(p => [p.id, p]));
+    const tops = projects.filter(p => !p.parentId || !byId.has(p.parentId));
+    const subsOf = (id: string) => projects.filter(p => p.parentId === id);
+    const row = (p: Project, isSub: boolean) =>
+        `<label class="export-project-item${isSub ? ' export-project-item--sub' : ''}">
+            <input type="checkbox" value="${escapeHtml(p.id)}"${isSub ? ` data-parent-id="${escapeHtml(p.parentId!)}"` : ''} checked>
             <span>${escapeHtml(p.name)}</span>
             <span class="export-project-meta">${p.files.length} files</span>
-        </label>`
-    ).join('');
+        </label>`;
+    const projectCheckboxes = tops.map(p => row(p, false) + subsOf(p.id).map(s => row(s, true)).join('')).join('');
 
     overlay.innerHTML = `
         <div class="modal modal--large">
@@ -163,6 +167,7 @@ export async function showExportDialog(): Promise<void> {
                     <input type="checkbox" id="exportSelectAll" checked>
                     <strong>${escapeHtml(t('exportSelectAll'))}</strong>
                 </label>
+                <p class="export-sub-note">${escapeHtml(t('exportSubNote'))}</p>
                 <div class="export-project-list">${projectCheckboxes}</div>
                 <div class="modal-field-group">
                     <label class="modal-label">${escapeHtml(t('exportPassword'))}</label>
@@ -183,14 +188,37 @@ export async function showExportDialog(): Promise<void> {
     const itemCbs = overlay.querySelectorAll<HTMLInputElement>('.export-project-item input[type="checkbox"]');
     const errorEl = overlay.querySelector<HTMLElement>('.modal-error')!;
 
-    selectAllCb.addEventListener('change', () => {
-        itemCbs.forEach(cb => cb.checked = selectAllCb.checked);
-    });
-    itemCbs.forEach(cb => cb.addEventListener('change', () => {
+    function recalcSelectAll(): void {
         const allChecked = Array.from(itemCbs).every(c => c.checked);
         const someChecked = Array.from(itemCbs).some(c => c.checked);
         selectAllCb.checked = allChecked;
         selectAllCb.indeterminate = !allChecked && someChecked;
+    }
+
+    function enforceMainInclusion(): void {
+        itemCbs.forEach(cb => {
+            const parentId = (cb as HTMLInputElement).dataset.parentId;
+            if (parentId && cb.checked) {
+                const mainCb = Array.from(itemCbs).find(c => c.value === parentId) as HTMLInputElement | undefined;
+                if (mainCb && !mainCb.checked) mainCb.checked = true;
+            }
+        });
+    }
+
+    selectAllCb.addEventListener('change', () => {
+        itemCbs.forEach(cb => cb.checked = selectAllCb.checked);
+    });
+    itemCbs.forEach(cb => cb.addEventListener('change', () => {
+        const parentId = (cb as HTMLInputElement).dataset.parentId;
+        if (parentId && cb.checked) {
+            enforceMainInclusion();
+        }
+        if (!parentId && !cb.checked) {
+            itemCbs.forEach(c => {
+                if ((c as HTMLInputElement).dataset.parentId === cb.value) c.checked = false;
+            });
+        }
+        recalcSelectAll();
     }));
 
     function close() {
@@ -294,20 +322,80 @@ async function processImport(data: Uint8Array, password?: string): Promise<void>
     const importedProjects = result.projects;
     if (importedProjects.length === 0) return;
 
+    for (const p of importedProjects) ensureEntryIds(p);
+
+    importedProjects.sort((a, b) => Number(!!a.parentId) - Number(!!b.parentId));
+
+    const originalById = new Map(importedProjects.map(p => [p.id, structuredClone(p)] as const));
+
+    const idMap = new Map<string, string>();
+
     const existingProjects = await getAllProjects();
     const existingNames = new Set(existingProjects.map(p => p.name));
+
+    function resolveParent(p: Project): void {
+        if (!p.parentId) return;
+        const mapped = idMap.get(p.parentId);
+        if (mapped) {
+            p.parentId = mapped;
+        } else {
+            // Main was skipped — materialize from the in-file main data
+            const mainData = originalById.get(p.parentId);
+            if (mainData) {
+                detachProject(p, buildSubItems(p, mainData));
+            } else {
+                delete p.parentId;
+                delete p.layout;
+            }
+        }
+    }
 
     // Find duplicates
     const duplicates = importedProjects.filter(p => existingNames.has(p.name));
     const nonDuplicates = importedProjects.filter(p => !existingNames.has(p.name));
 
-    // Import non-duplicates directly
+    // Show duplicate dialog FIRST (before any saves), so all id decisions land in idMap
+    // before any sub's parent is resolved.
+    let resolution: DuplicateResolution[] | null = null;
+    if (duplicates.length > 0) {
+        resolution = await showDuplicateDialog(duplicates, existingProjects);
+    }
+
+
+    for (const p of nonDuplicates) {
+        const oldId = p.id;
+        p.id = generateId();
+        idMap.set(oldId, p.id);
+    }
+    // Duplicates: record id decisions per resolution.
+    if (resolution) {
+        for (const item of resolution) {
+            if (item.action === 'skip') continue;
+            if (item.action === 'overwrite') {
+                const existing = existingProjects.find(ep => ep.name === item.project.name);
+                if (existing) {
+                    idMap.set(item.project.id, existing.id);
+                    item.project.id = existing.id;
+                }
+            } else if (item.action === 'rename') {
+                const oldId = item.project.id;
+                item.project.id = generateId();
+                idMap.set(oldId, item.project.id);
+                item.project.name = item.newName || t('importRenamed', { name: item.project.name });
+            } else if (item.action === 'duplicate') {
+                const oldId = item.project.id;
+                item.project.id = generateId();
+                idMap.set(oldId, item.project.id);
+            }
+        }
+    }
+
     let importedCount = 0;
     const errors: string[] = [];
 
     for (const p of nonDuplicates) {
         try {
-            p.id = generateId();
+            resolveParent(p);
             await saveProject(p);
             importedCount++;
         } catch (e) {
@@ -315,33 +403,15 @@ async function processImport(data: Uint8Array, password?: string): Promise<void>
         }
     }
 
-    // Handle duplicates
-    if (duplicates.length > 0) {
-        const resolution = await showDuplicateDialog(duplicates, existingProjects);
-        if (resolution) {
-            for (const item of resolution) {
-                try {
-                    if (item.action === 'skip') continue;
-                    if (item.action === 'overwrite') {
-                        const existing = existingProjects.find(ep => ep.name === item.project.name);
-                        if (existing) {
-                            item.project.id = existing.id;
-                            await saveProject(item.project);
-                            importedCount++;
-                        }
-                    } else if (item.action === 'rename') {
-                        item.project.id = generateId();
-                        item.project.name = item.newName || t('importRenamed', { name: item.project.name });
-                        await saveProject(item.project);
-                        importedCount++;
-                    } else if (item.action === 'duplicate') {
-                        item.project.id = generateId();
-                        await saveProject(item.project);
-                        importedCount++;
-                    }
-                } catch (e) {
-                    errors.push(t('importError', { message: `${item.project.name}: ${String(e)}` }));
-                }
+    if (resolution) {
+        for (const item of resolution) {
+            try {
+                if (item.action === 'skip') continue;
+                resolveParent(item.project);
+                await saveProject(item.project);
+                importedCount++;
+            } catch (e) {
+                errors.push(t('importError', { message: `${item.project.name}: ${String(e)}` }));
             }
         }
     }

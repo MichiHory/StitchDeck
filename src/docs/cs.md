@@ -57,13 +57,57 @@ Projekty můžete exportovat do komprimovaného souboru `.sdeck` a zpětně je i
 - Klikněte na ikonové tlačítko **import** v záhlaví panelu projektů (šipka dolů)
 - Vyberte soubor `.sdeck` — pokud je chráněn heslem, budete vyzváni k jeho zadání
 - Pokud názvy importovaných projektů již existují, zobrazí se dialog pro každý duplicitní projekt s možnostmi:
-  - **Přejmenovat** — zobrazí se textový vstup s navrženým názvem (např. „Můj projekt (importováno)"), který můžete libovolně upravit
+  - **Přejmenovat** — zobrazí se textový vstup s navrženým názvem (např. „Můj projekt (importováno)“), který můžete libovolně upravit
   - **Přepsat** — nahradí existující projekt
   - **Vytvořit duplicitu** — importuje se stejným názvem vedle existujícího projektu
   - **Přeskočit** — tento projekt neimportovat
 - Chyby při importu se zobrazí jako vrstvené toast notifikace, aby byly všechny hlášky vidět najednou
 
-## Přidávání souborů
+## Subprojekty
+
+Subprojekty umožňují udržovat více souvisejících seznamů souborů, které sdílejí společnou sadu souborů z **hlavního projektu**. Hodí se například pro různé úkoly AI nad stejnou kódovou bází nebo pro různé varianty projektu bez duplikování souborů.
+
+### Jak dědičnost funguje
+
+Subprojekt dědí všechny soubory z hlavního projektu **odkazem** — žádné kopírování při vytvoření neprobíhá. Zděděné soubory se zobrazují s **modrým levým okrajem** a badge „hlavní“. Hlavní projekt přitom zůstává plně funkčním samostatným projektem.
+
+Když hlavní projekt získá nové soubory, automaticky se objeví i v subprojektu (zařazeny za nejbližšího předchůdce podle pořadí v hlavním projektu). Pokud je soubor z hlavního projektu odstraněn, ze subprojektu zmizí také.
+
+### Přepisy (overrides)
+
+Zděděnou položku v subprojektu lze přepsat bez dopadu na hlavní projekt:
+
+- **Nahrajte soubor se stejnou cestou** — zděděná položka je nahrazena vaší verzí (oranžový badge „přepsáno“)
+- **Upravte zděděný vlastní text** — vytvoří se lokální kopie textu v subprojektu
+- **GitHub sync** — pokud synchronizovaný soubor odpovídá zděděné cestě, vznikne přepis v subprojektu
+
+Přepis odstraníte tlačítkem ✕ u přepsané položky — zděděná položka se obnoví, včetně původního stavu skrytí.
+
+### Viditelnost (přepínač oka)
+
+Najeďte myší na libovolný soubor v seznamu — zobrazí se **ikona oka**. Kliknutím vyřadíte položku ze sloučeného výstupu, exportu PDF a bezpečnostního skenu, aniž by byla ze seznamu odstraněna. Skryté položky se zobrazují s 45% průhledností a oranžovým přeškrtnutým okem.
+
+Viditelnost je **striktně per-projekt**: skrytí souboru v hlavním projektu nijak neovlivní subprojekt a naopak. Zděděné položky lze skrýt (pouze oko — bez tlačítka ✕).
+
+### Vytvoření subprojektu
+
+Najeďte myší na hlavní projekt v postranním panelu — zobrazí se tlačítko **+**. Klikněte, zadejte název a nový subprojekt zdědí všechny položky hlavního projektu. V postranním panelu se zobrazí odsazený pod svým hlavním projektem.
+
+### Sbalení subprojektů
+
+Klikněte na šipku u hlavního projektu v postranním panelu pro sbalení nebo rozbalení jeho subprojektů. Stav přetrvává i po obnovení stránky.
+
+### Odpojení subprojektu
+
+Klikněte na tlačítko **⇱** u řádku subprojektu v postranním panelu. Po potvrzení se všechny zděděné položky zkopírují do subprojektu (s novými ID) a ten se stane plně nezávislým projektem.
+
+### Reset subprojektu
+
+Tlačítko **Vymazat vše** v subprojektu funguje jako reset: všechny vlastní položky a přepisy se odstraní, všechny skryté položky se znovu zobrazí a pořadí se obnoví podle aktuálního pořadí v hlavním projektu.
+
+### Export a import
+
+Při exportu subprojektu se jeho hlavní projekt vždy automaticky přibalí (i když jste ho nezaškrtli). Při importu se vztah obnoví a ID se správně přemapují. Pokud importujete subprojekt, jehož hlavní projekt byl přeskočen nebo není přítomen, subprojekt se automaticky odpojí a jeho položky se materializují.
 
 Soubory do projektu přidáte přetažením (drag & drop) na hlavní obsahovou oblast.
 
@@ -79,7 +123,7 @@ StitchDeck zachycuje úplné cesty souborů včetně adresářové struktury pom
 
 ### Aktualizace souborů
 
-Pokud přetáhnete soubor se stejným názvem a cestou jako existující, bude aktualizován na místě. Uvidíte vizuální efekt — starý soubor se „rozpadne" na částice a nový se objeví s animací zvětšení. To je užitečné, když jste v souboru provedli změny a chcete ho v projektu aktualizovat.
+Pokud přetáhnete soubor se stejným názvem a cestou jako existující, bude aktualizován na místě. Uvidíte vizuální efekt — starý soubor se „rozpadne“ na částice a nový se objeví s animací zvětšení. To je užitečné, když jste v souboru provedli změny a chcete ho v projektu aktualizovat.
 
 ### Lazy loading
 
@@ -156,7 +200,7 @@ Všechny volby se ukládají jako preference a obnoví se při další návště
 - **Oříznutí prázdných řádků** — odstraní prázdné řádky na začátku a konci obsahu každého souboru pro čistší výstup
 - **LLM formát** — přidá `<file_map>` s číslovaným seznamem všech souborů na začátek a obalí obsah každého souboru do `<file path="...">...</file>` XML tagů. Formát je inspirován Repomixem a je optimální pro Claude, GPT i Gemini. Vzájemně se vylučuje s prostými cestami.
 - **Komprese exportu** — snižuje počet tokenů odstraněním komentářů (řádkové i blokové pro C-style, hash, HTML a SQL jazyky), zkolabováním po sobě jdoucích prázdných řádků, redukcí odsazení (4 mezery na 2, taby na 2 mezery — kromě Pythonu) a oříznutím trailing whitespace. U markdown a plaintext souborů se pouze kolabují prázdné řádky (komentáře jsou obsah).
-- **Bezpečnostní sken** — před sloučením prohledá obsah všech souborů na potenciální tajné klíče: API klíče, tokeny, hesla, privátní klíče, connection stringy a další citlivé údaje. Při nálezu zobrazí varovný dialog s tabulkou nálezů, kde u každého záznamu je checkbox. Můžete zvolit, které secrety se ve výstupu nahradí náhodným řetězcem — zaškrtnuté se nahradí, nezaškrtnuté zůstanou beze změny. Checkbox „vybrat vše" v záhlaví tabulky umožňuje rychle přepnout všechny nálezy. Zdrojové soubory se nikdy nemění — nahrazení se aplikuje pouze na sloučený výstup. Operaci můžete také zrušit.
+- **Bezpečnostní sken** — před sloučením prohledá obsah všech souborů na potenciální tajné klíče: API klíče, tokeny, hesla, privátní klíče, connection stringy a další citlivé údaje. Při nálezu zobrazí varovný dialog s tabulkou nálezů, kde u každého záznamu je checkbox. Můžete zvolit, které secrety se ve výstupu nahradí náhodným řetězcem — zaškrtnuté se nahradí, nezaškrtnuté zůstanou beze změny. Checkbox „vybrat vše“ v záhlaví tabulky umožňuje rychle přepnout všechny nálezy. Zdrojové soubory se nikdy nemění — nahrazení se aplikuje pouze na sloučený výstup. Operaci můžete také zrušit.
 - **Převod PDF na text** — zobrazí se jen pokud seznam obsahuje alespoň jeden PDF soubor. Extrahuje text z PDF stránek řazený podle vizuální pozice. Při vypnutí se místo obsahu PDF zobrazí placeholder `[PDF – binární obsah]`.
 
 ### Výstup
@@ -220,7 +264,7 @@ Tipy a klávesové zkratky pro efektivnější práci se StitchDeck.
 
 - Použijte **LLM-optimalizovaný formát** pro nejlepší výsledky s AI modely — mapa souborů na začátku dá modelu přehled o všech souborech ještě před čtením obsahu
 - Zapněte **kompresi exportu** pokud potřebujete snížit počet tokenů — to je obzvláště užitečné u velkých kódových bází, kde se komentáře a whitespace nastřádají
-- Vložte **vlastní text** na pozici 1 s instrukcemi pro AI (např. „Analyzuj tento kód a najdi potenciální chyby" nebo „Refaktoruj následující kód pro lepší čitelnost")
+- Vložte **vlastní text** na pozici 1 s instrukcemi pro AI (např. „Analyzuj tento kód a najdi potenciální chyby“ nebo „Refaktoruj následující kód pro lepší čitelnost“)
 - **Bezpečnostní sken** nechte zapnutý — chrání před nechtěným sdílením API klíčů, databázových hesel a dalších tajných údajů s AI službami
 - Propojte projekt s **GitHub** pro rychlý import souborů z repozitáře — přímo ve stromové struktuře můžete vynechat složky jako `node_modules`, `dist` nebo `.env`
 - Použijte **stromový režim** zobrazení při práci s mnoha soubory z hluboké adresářové struktury — usnadní pochopení layoutu projektu

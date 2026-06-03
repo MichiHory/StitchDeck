@@ -1,12 +1,12 @@
 import { state } from './state';
 import type { FileEntry, GitHubConfig } from './db';
-import { getProject, saveProject } from './db';
+import { getProject, saveProject, generateId } from './db';
 import { t } from './i18n';
 import { toast } from './toast';
 import { showModal } from './modal';
 import { escapeHtml, getExtColor } from './helpers';
 import { renderFileList } from './file-list';
-import { scheduleSave, renderProjectList, updateGitHubStatus } from './projects';
+import { scheduleSave, renderProjectList, updateGitHubStatus, persistCurrentProject } from './projects';
 
 /* ── GitHub API helpers ── */
 
@@ -308,6 +308,7 @@ export async function syncFromGitHub(config: GitHubConfig, progressCallback?: (m
                     fetched++;
                     progressCallback?.(t('ghFetchingFiles', { fetched: String(fetched), total: String(total) }));
                     return {
+                        id: generateId(),
                         name: item.path.split('/').pop()!,
                         path: item.path,
                         content,
@@ -706,40 +707,51 @@ async function performSync(config: GitHubConfig): Promise<void> {
             progressEl.textContent = msg;
         });
 
-        // Preserve manually added files and custom texts at their positions
-        const preserved: { file: FileEntry, index: number }[] = [];
-        state.files.forEach((f, i) => {
-            if (f.isCustomText || f.source === 'manual') {
-                preserved.push({ file: f, index: i });
+        // In-place merge: keep user order, update content, create overrides in subprojects
+        const fetchedByPath = new Map(files.map(f => [f.path, f]));
+        const consumed = new Set<string>();
+
+        state.items = state.items.flatMap((item): typeof state.items => {
+            const entry = item.entry;
+            if (entry.isCustomText) return [item];
+            const fetched = fetchedByPath.get(entry.path);
+            if (fetched) {
+                consumed.add(entry.path);
+                if (item.origin === 'inherited') {
+                    // Path collision with an inherited entry → copy-on-write override
+                    const own: FileEntry = { ...fetched, id: generateId() };
+                    return [{ entry: own, origin: 'override', inheritedId: item.inheritedId, hidden: item.hidden }];
+                }
+                // Update own/override in place, keep the stable id
+                const own: FileEntry = { ...fetched, id: entry.id };
+                return [{ ...item, entry: own }];
             }
+            // Path no longer in the repo
+            if (entry.source === 'github') {
+                if (item.origin === 'override' && state.parentProject) {
+                    const mainEntry = state.parentProject.files.find(f => f.id === item.inheritedId);
+                    if (mainEntry) {
+                        return [{ entry: mainEntry, origin: 'inherited', inheritedId: item.inheritedId, hidden: item.hidden }];
+                    }
+                }
+                if (item.origin !== 'inherited') return [];
+            }
+            return [item];
         });
 
-        // Build new array: start with github files, then re-insert preserved at original positions
-        const result: FileEntry[] = [...files];
-        preserved.sort((a, b) => a.index - b.index);
-        for (const entry of preserved) {
-            const targetIndex = Math.min(entry.index, result.length);
-            result.splice(targetIndex, 0, entry.file);
+        // Append new repo files not seen before
+        for (const f of files) {
+            if (consumed.has(f.path)) continue;
+            state.items.push({ entry: f, origin: 'own', hidden: false });
         }
-        state.files = result;
 
-        // Save GitHub config to project
+        // Save GitHub config and persist via the central path
         const project = await getProject(state.currentProjectId);
         if (project) {
             project.github = config;
-            project.files = state.files.map(f => {
-                const obj: FileEntry = { name: f.name, path: f.path, content: f.content, size: f.size };
-                if (f.pdfData) obj.pdfData = f.pdfData;
-                if (f.source) obj.source = f.source;
-                if (f.isCustomText) {
-                    obj.isCustomText = true;
-                    obj.customTitle = f.customTitle;
-                    obj.includeTitle = f.includeTitle;
-                }
-                return obj;
-            });
             await saveProject(project);
         }
+        await persistCurrentProject();
 
         renderFileList();
         updateGitHubStatus(config);

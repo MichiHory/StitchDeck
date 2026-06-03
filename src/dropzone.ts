@@ -1,5 +1,6 @@
 import { state } from './state';
 import type { FileEntry } from './db';
+import { generateId } from './db';
 import { cleanPath, readFile } from './helpers';
 import { t } from './i18n';
 import { toast } from './toast';
@@ -64,15 +65,26 @@ async function handleFilesWithPaths(fileList: FileList, capturedPaths: string[])
         } else {
             content = await readFile(f);
         }
-        const existingIndex = state.files.findIndex(entry => entry.path === path);
-        const fileEntry: FileEntry = { name: f.name, path, content, size: f.size, source: 'manual' };
-        if (pdfData) fileEntry.pdfData = pdfData;
+
+        const existingIndex = state.items.findIndex(item => !item.entry.isCustomText && item.entry.path === path);
         if (existingIndex !== -1) {
-            state.files[existingIndex] = fileEntry;
+            const item = state.items[existingIndex];
+            if (item.origin === 'inherited') {
+                const entry: FileEntry = { id: generateId(), name: f.name, path, content, size: f.size, source: 'manual' };
+                if (pdfData) entry.pdfData = pdfData;
+                state.items[existingIndex] = { entry, origin: 'override', inheritedId: item.inheritedId, hidden: item.hidden };
+                toast(t('overrideCreated', { name: f.name }), 'success');
+            } else {
+                const entry: FileEntry = { id: item.entry.id, name: f.name, path, content, size: f.size, source: 'manual' };
+                if (pdfData) entry.pdfData = pdfData;
+                state.items[existingIndex] = { ...item, entry };
+                toast(t('updated', { name: f.name }), 'success');
+            }
             updatedIndices.push(existingIndex);
-            toast(t('updated', { name: f.name }), 'success');
         } else {
-            state.files.push(fileEntry);
+            const entry: FileEntry = { id: generateId(), name: f.name, path, content, size: f.size, source: 'manual' };
+            if (pdfData) entry.pdfData = pdfData;
+            state.items.push({ entry, origin: 'own', hidden: false });
         }
     }
 
@@ -123,19 +135,19 @@ export function initDropzone(): void {
 
     mainContentEl.addEventListener('dragenter', e => {
         if (state.dragSrcIndex !== null) return;
-        if (!state.files.length) return;
+        if (!state.items.length) return;
         e.preventDefault();
         mainDragCounter++;
         if (mainDragCounter === 1) showMainOverlay();
     });
     mainContentEl.addEventListener('dragover', e => {
         if (state.dragSrcIndex !== null) return;
-        if (!state.files.length) return;
+        if (!state.items.length) return;
         e.preventDefault();
     });
     mainContentEl.addEventListener('dragleave', () => {
         if (state.dragSrcIndex !== null) return;
-        if (!state.files.length) return;
+        if (!state.items.length) return;
         mainDragCounter--;
         if (mainDragCounter <= 0) {
             mainDragCounter = 0;
@@ -146,7 +158,7 @@ export function initDropzone(): void {
         mainDragCounter = 0;
         hideMainOverlay();
         if (state.dragSrcIndex !== null) return;
-        if (!state.files.length) return;
+        if (!state.items.length) return;
         handleDrop(e);
     });
 

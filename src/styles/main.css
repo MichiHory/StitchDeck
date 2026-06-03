@@ -2283,3 +2283,96 @@ html.light .btn-add-text:hover {
         gap: .25rem;
     }
 }
+
+/* ── Subprojects: entry origin & visibility ───────────────── */
+.file-item.entry-inherited,
+.file-tile.entry-inherited,
+.tree-file.entry-inherited { border-left: 2px solid #38bdf8; }
+
+.file-item.entry-override,
+.file-tile.entry-override,
+.tree-file.entry-override { border-left: 2px solid #f59e0b; }
+
+/* ── Name-row wrappers: keep badge visible outside the ellipsized name ── */
+.file-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.file-name-row .file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.tile-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+}
+.tile-name-row .tile-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.entry-badge {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 1px 6px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    line-height: 1.5;
+    text-transform: lowercase;
+}
+.entry-badge--main { color: #38bdf8; background: #38bdf81f; border: 1px solid #38bdf84d; }
+.entry-badge--override { color: #f59e0b; background: #f59e0b1f; border: 1px solid #f59e0b4d; }
+
+.entry-hidden { opacity: 0.45; }
+.entry-hidden:hover { opacity: 0.7; }
+
+.eye-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim, #888);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: all 150ms cubic-bezier(.4, 0, .2, 1);
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+}
+.file-item:hover .eye-btn,
+.file-tile:hover .eye-btn,
+.tree-file:hover .eye-btn,
+.eye-btn--off { opacity: 1; }
+.eye-btn:hover { color: var(--accent, #22c55e); background: rgba(255, 255, 255, 0.06); }
+.eye-btn--off { color: #f59e0b; }
+
+/* ── Subprojects: sidebar ─────────────────────────────────── */
+.project-item--sub { margin-left: 18px; }
+.project-collapse {
+    background: none;
+    border: none;
+    color: var(--text-dim, #888);
+    cursor: pointer;
+    padding: 0 2px;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+.project-collapse svg { transition: transform 150ms cubic-bezier(.4, 0, .2, 1); }
+.project-collapse.open svg { transform: rotate(90deg); }
+.project-sub-count { color: var(--text-dim, #888); font-size: 11px; }
+.modal-radio { display: flex; gap: 8px; align-items: center; margin-top: 8px; cursor: pointer; }
+
+/* ── Export dialog: subproject indentation and note ──────── */
+.export-project-item--sub { margin-left: 18px; }
+.export-sub-note { font-size: 11px; color: var(--text-dim); margin: 4px 0 8px; }

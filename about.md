@@ -13,6 +13,30 @@ A utility for merging files for LLMs. The utility can:
 * Automatically restore the last active project on startup (saved in localStorage)
 * On first launch, a default project is automatically created ("Default project" / "Výchozí projekt" depending on language)
 
+## Subprojects
+
+* Two-level hierarchy: a main project can have multiple subprojects; main projects remain fully usable as standalone projects
+* **Inheritance by reference**: a subproject's list is resolved at load time from the main project's files — no duplication in storage
+* **Per-subproject ordering**: each subproject has its own file order; main project reorders do not propagate; when the main gains a new entry it slots into the subproject after its nearest main-order predecessor (or at the start if no predecessor exists)
+* **Copy-on-write overrides**: a subproject entry becomes an override (orange "overridden" badge) when:
+  - A file with the same path is uploaded directly into the subproject
+  - An inherited custom text entry is edited in the subproject
+  - A GitHub sync fetches a file whose path matches an inherited entry
+  - Deleting an override restores the inherited entry (the link to the main is preserved, including the hidden state)
+* **Per-project eye visibility**: the eye toggle is strictly per-project; hiding an entry in the main does not affect subprojects and vice versa; hidden entries are listed at 45% opacity with a crossed-out eye icon and are excluded from merge, PDF export, and security scan
+* **Inherited entries cannot be deleted** in a subproject — only the eye toggle is available (no ✕ button); own and override entries can be removed
+* **Visual language in the file list**:
+  - Inherited entry: blue left border + "main" badge (title shows the main project name)
+  - Override entry: orange left border + "overridden" badge
+  - Hidden entry: 45% opacity regardless of origin
+* **Sidebar nesting**: subprojects are indented under their main with 18px left margin; a collapse arrow on the main row toggles visibility of its subs; collapsed state persists in `localStorage` under key `stitchdeck_collapsedMains`; when collapsed the main row shows a count of hidden subs
+* **Create subproject**: hover over a main project in the sidebar → click the `+` button → name modal → empty subproject appears inheriting all main entries
+* **Detach (⇱)**: clicking the detach button on a subproject row opens a confirmation dialog; on confirm, all inherited entries are deep-copied with fresh IDs into the subproject, which then becomes a standalone project
+* **Delete main project with subprojects**: if a main has subprojects, a choice dialog appears:
+  - Detach subprojects — inherited entries are materialized (copied in with fresh IDs)
+  - Cascade delete — all subprojects are deleted too
+* **Clear all in a subproject** (the red "Clear all" button) acts as a hard reset: all own entries and overrides are deleted, all hidden entries are re-shown, and the order is restored to main's current order
+
 ## Project Export and Import
 
 * Export projects to a compressed file (.sdeck format)
@@ -167,11 +191,11 @@ A utility for merging files for LLMs. The utility can:
   - Displayed below the toolbar with the GitHub logo, repository name and current branch
   - Buttons: sync (updates files), settings (opens dialog with pre-filled values), disconnect
   - When switching projects, updates according to the saved GitHub connection of that project
-* Synchronization
+* Synchronization (in-place algorithm — order preserved)
   - Files are downloaded via raw.githubusercontent.com in batches of 10 for optimal performance
-  - Replaces only files with `source: 'github'` with new ones from GitHub
-  - Manually added files (`source: 'manual'`) and custom texts remain in their positions including order
-  - If manual file positions would exceed the total item count after sync, they are automatically recalculated
+  - Each fetched file is matched by path to the existing list; matched items are updated **in place** (user order is kept); new repo files are appended at the end; repo-removed github-source files are removed
+  - Custom texts pass through unchanged
+  - In subprojects: if a fetched path matches an inherited entry, a copy-on-write override is created; own/override entries are updated in place keeping their stable IDs
   - Sync progress shows a modal window with a progress bar and status information
 * GitHub connection settings are saved to IndexedDB as part of the project (interface GitHubConfig: owner, repo, branch, token, customExcludes)
 * Full i18n support (EN/CS)
@@ -266,32 +290,36 @@ A utility for merging files for LLMs. The utility can:
 ## Technical Stack
 
 * **Build**: Vite 8 (Rolldown) + TypeScript (strict mode, ES2020 target)
+* **Testing**: Vitest (pure-function unit tests, no DOM; run with `npm test`)
 * **Dependencies**: highlight.js (syntax highlighting), pdf-lib (PDF operations), pdfjs-dist (PDF text extraction), tokenx (token counting), GitHub REST API (repository fetching, no external libraries)
+* **Dev dependencies**: vitest
 * **Project structure**:
   - `index.html` — HTML template
   - `src/main.ts` — entry point, initialization of all systems
   - `src/styles/main.css` — all styles
   - `src/i18n.ts` — translations and i18n functions
-  - `src/db.ts` — IndexedDB operations, types (FileEntry, Project, GitHubConfig)
-  - `src/state.ts` — shared application state (files, fullMergedContent, dragSrcIndex, renderGeneration, currentProjectId, saveTimeout, viewMode)
+  - `src/db.ts` — IndexedDB operations, types (FileEntry, LayoutSlot, Project, GitHubConfig)
+  - `src/state.ts` — shared application state (items: ListItem[], parentProject, fullMergedContent, dragSrcIndex, renderGeneration, currentProjectId, saveTimeout, viewMode)
+  - `src/inheritance.ts` — pure subproject logic: buildOwnItems, buildSubItems, applyItemsToProject, detachProject, resetSubItems, visibleEntries, ensureEntryIds
   - `src/dom.ts` — DOM element references
   - `src/helpers.ts` — utility functions (escapeHtml, formatSize, countTokens, formatTokens, cleanPath, readFile, getExtColor, getLanguage)
   - `src/toast.ts` — toast notifications
   - `src/modal.ts` — modal dialogs (generic component with validation)
   - `src/animations.ts` — particle burst and grow-in animations
-  - `src/projects.ts` — project management (CRUD, persistence, switching)
-  - `src/export-import.ts` — project export and import (compression, encryption, UI dialogs, duplicate handling)
-  - `src/file-list.ts` — file list rendering, drag & drop reorder, custom text dialogs
-  - `src/dropzone.ts` — drag & drop file upload
-  - `src/merge.ts` — merging, copying, downloading (text and PDF), clear all
+  - `src/projects.ts` — project management (CRUD, persistence, switching, hierarchical sidebar, create-sub, detach, delete-main dialog)
+  - `src/export-import.ts` — project export and import (compression, encryption, UI dialogs, duplicate handling, .sdeck v2 with subproject relation preservation)
+  - `src/file-list.ts` — file list rendering, drag & drop reorder, custom text dialogs, eye toggle, origin badges
+  - `src/dropzone.ts` — drag & drop file upload, override-on-upload logic
+  - `src/merge.ts` — merging, copying, downloading (text and PDF), clear all (reset for subs)
   - `src/pdf.ts` — PDF binary conversion utilities
-  - `src/github.ts` — GitHub API integration (repository fetching, .gitignore parsing, synchronization, tree structure)
+  - `src/github.ts` — GitHub API integration (repository fetching, .gitignore parsing, in-place synchronization, tree structure)
   - `src/github-init.ts` — GitHub UI event initialization (buttons, disconnect)
   - `src/lang-switcher.ts` — language switcher
   - `src/theme-toggle.ts` — light/dark mode toggle
   - `src/help.ts` — help page with markdown parser and navigation
   - `src/docs/en.md` — documentation in English
   - `src/docs/cs.md` — documentation in Czech
+  - `tests/inheritance.test.ts` — unit tests for the pure inheritance logic (14 tests)
   - `public/robots.txt` — robots.txt for search engines
 
 ## Persistence
@@ -299,6 +327,9 @@ A utility for merging files for LLMs. The utility can:
 * **IndexedDB** (database `stitchdeck`, version 1, object store `projects`)
   - Stores projects with files and GitHub configuration
   - Operations: getAllProjects, getProject, saveProject, deleteProjectFromDB
+  - `FileEntry` fields: `id` (stable string, generated by `generateId()`), `name`, `path`, `content`, `size`, `hidden?` (per-project eye toggle for main/standalone projects), `pdfData?`, `isCustomText?`, `customTitle?`, `includeTitle?`, `source?` ('github' | 'manual')
+  - `Project` fields: `id`, `name`, `files`, `parentId?` (set on subprojects), `layout?` (subprojects only — `LayoutSlot[]` with `inheritedId?`, `ownId?`, `hidden?`), `github?`
+  - Lazy ID migration: on `initProjects`, any entry lacking an `id` gets one assigned via `ensureEntryIds` and the project is immediately re-saved (one-time migration, no DB version bump needed)
 * **localStorage** keys:
   - `stitchdeck_viewMode` — view mode (list/tiles/tree)
   - `stitchdeck_togglePaths` — path insertion in output
@@ -310,3 +341,5 @@ A utility for merging files for LLMs. The utility can:
   - `stitchdeck_lang` — language (en/cs)
   - `stitchdeck_theme` — theme (dark/light)
   - `stitchdeck_activeProject` — ID of the last active project
+  - `stitchdeck_collapsedMains` — JSON array of main project IDs whose subprojects are collapsed in the sidebar
+* **.sdeck export format**: magic bytes "SDCK" + VERSION (currently 2) + encrypted flag + payload; v1 files (VERSION byte = 1) are still importable; entries missing `id` are assigned one via `ensureEntryIds` on import

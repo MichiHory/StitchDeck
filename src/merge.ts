@@ -41,6 +41,7 @@ import {toast} from './toast';
 import {showModal} from './modal';
 import {renderFileList} from './file-list';
 import {scheduleSave} from './projects';
+import {resetSubItems, visibleEntries} from './inheritance';
 import {base64ToUint8Array} from './pdf';
 import {
     clearBtn,
@@ -204,23 +205,25 @@ export function initMerge(): void {
 
     // Merge
     mergeBtn.addEventListener('click', async () => {
-        if (!state.files.length) return;
+        if (!state.items.length) return;
+        const files = visibleEntries(state.items);
+        if (!files.length) { toast(t('allEntriesHidden')); return; }
 
         // Security scan
         let secretReplacements: Map<string, Map<number, string>> | null = null;
         if (toggleSecurityScan.checked) {
             // Ensure lazy-loaded files have content
-            for (const f of state.files) {
+            for (const f of files) {
                 if (f.content === null && f._file) {
                     f.content = await readFile(f._file);
                 }
             }
-            const findings = scanForSecurityIssues(state.files);
+            const findings = scanForSecurityIssues(files);
             if (findings.length > 0) {
                 const scanResult = await showSecurityDialog(findings);
                 if (!scanResult) return; // cancelled
                 if (scanResult.replacements.size > 0) {
-                    secretReplacements = buildSecretReplacements(state.files, findings, scanResult.replacements);
+                    secretReplacements = buildSecretReplacements(files, findings, scanResult.replacements);
                     toast(t('securitySecretsReplaced', { count: scanResult.replacements.size }), 'success');
                 }
             }
@@ -245,8 +248,8 @@ export function initMerge(): void {
             if (includeFileMap) {
                 plainLinesArray.push('<file_map>');
                 htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;file_map&gt;</span>`);
-                for (let i = 0; i < state.files.length; i++) {
-                    const entry = state.files[i];
+                for (let i = 0; i < files.length; i++) {
+                    const entry = files[i];
                     const label = entry.isCustomText
                         ? (entry.includeTitle && entry.customTitle ? `[text: ${entry.customTitle}]` : '[text]')
                         : cleanPath(entry.path);
@@ -260,8 +263,8 @@ export function initMerge(): void {
                 htmlLinesArray.push('');
             }
 
-            for (let i = 0; i < state.files.length; i++) {
-                const entry = state.files[i];
+            for (let i = 0; i < files.length; i++) {
+                const entry = files[i];
 
                 // Custom text entries — treat like .md files
                 if (entry.isCustomText) {
@@ -291,7 +294,7 @@ export function initMerge(): void {
                         plainLinesArray.push('</file>');
                         htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;/file&gt;</span>`);
                     }
-                    if (i < state.files.length - 1) {
+                    if (i < files.length - 1) {
                         plainLinesArray.push('');
                         htmlLinesArray.push('');
                     }
@@ -334,7 +337,7 @@ export function initMerge(): void {
                         plainLinesArray.push('</file>');
                         htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;/file&gt;</span>`);
                     }
-                    if (i < state.files.length - 1) {
+                    if (i < files.length - 1) {
                         plainLinesArray.push('');
                         htmlLinesArray.push('');
                     }
@@ -385,7 +388,7 @@ export function initMerge(): void {
                     htmlLinesArray.push(`<span style="${xmlTagStyle}">&lt;/file&gt;</span>`);
                 }
 
-                if (i < state.files.length - 1) {
+                if (i < files.length - 1) {
                     plainLinesArray.push('');
                     htmlLinesArray.push('');
                 }
@@ -393,7 +396,7 @@ export function initMerge(): void {
 
             state.fullMergedContent = plainLinesArray.join('\n');
             const totalLines = plainLinesArray.length;
-            const totalFiles = state.files.length;
+            const totalFiles = files.length;
             const totalSize = formatSize(new Blob([state.fullMergedContent]).size);
             const totalTokens = formatTokens(countTokens(state.fullMergedContent));
 
@@ -507,7 +510,9 @@ export function initMerge(): void {
             const includePaths = togglePaths.checked;
             const trimEmpty = toggleTrimEmpty.checked;
 
-            for (const entry of state.files) {
+            for (const item of state.items) {
+                if (item.hidden) continue;
+                const entry = item.entry;
                 if (entry.pdfData) {
                     const pdfBytes = base64ToUint8Array(entry.pdfData);
                     const srcDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
@@ -596,14 +601,15 @@ export function initMerge(): void {
 
     // Clear
     clearBtn.addEventListener('click', async () => {
+        const isSub = !!state.parentProject;
         const confirmed = await showModal({
-            title: t('clearAllTitle'),
-            body: t('clearAllConfirm'),
-            confirmText: t('clear'),
+            title: isSub ? t('resetSubTitle') : t('clearAllTitle'),
+            body: isSub ? t('resetSubConfirm') : t('clearAllConfirm'),
+            confirmText: isSub ? t('reset') : t('clear'),
             confirmClass: 'btn-danger',
         });
         if (!confirmed) return;
-        state.files = [];
+        state.items = isSub ? resetSubItems(state.parentProject!) : [];
         state.fullMergedContent = '';
         outputContent.innerHTML = '';
         lineNumbers.textContent = '';

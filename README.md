@@ -35,15 +35,17 @@ npm run preview
 ## Key Features
 
 - Project management with IndexedDB persistence
+- **Subprojects** — two-level hierarchy where subprojects inherit a main project's files by reference, with per-subproject ordering and copy-on-write overrides
+- **Per-entry visibility toggle** (eye icon) — exclude individual files from merge/export without removing them
 - Drag & drop file upload with full path capture
 - Three view modes: list, tiles, tree
 - Custom text entries mixed with files
 - LLM-optimized XML output with file map
 - Export compression (comment stripping, whitespace reduction)
 - Security scan for secrets before merging
-- GitHub integration (branch selection, .gitignore support, batch sync)
+- GitHub integration (branch selection, .gitignore support, in-place sync)
 - PDF processing (text extraction, merge, conversion)
-- Project export/import with optional AES-256-GCM encryption (.sdeck format)
+- Project export/import with optional AES-256-GCM encryption (.sdeck v2 format)
 - Light/dark theme, EN/CS localization
 
 ## Project Structure

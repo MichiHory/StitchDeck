@@ -3,16 +3,24 @@ const DB_VERSION = 1;
 const STORE_NAME = 'projects';
 
 export interface FileEntry {
+    id: string;
     name: string;
     path: string;
     content: string | null;
     size: number;
+    hidden?: boolean;
     pdfData?: string;
     _file?: File;
     isCustomText?: boolean;
     customTitle?: string;
     includeTitle?: boolean;
     source?: 'github' | 'manual';
+}
+
+export interface LayoutSlot {
+    inheritedId?: string;
+    ownId?: string;
+    hidden?: boolean;
 }
 
 export interface GitHubConfig {
@@ -27,6 +35,8 @@ export interface Project {
     id: string;
     name: string;
     files: FileEntry[];
+    parentId?: string;
+    layout?: LayoutSlot[];
     github?: GitHubConfig;
 }
 

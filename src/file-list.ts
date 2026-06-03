@@ -9,10 +9,11 @@ import {
 import { scheduleSave } from './projects';
 import { showModal } from './modal';
 import { toast } from './toast';
+import type { ListItem } from './inheritance';
+import { generateId } from './db';
 
 /* ── Custom tooltip for tiles ── */
 const TOOLTIP_DELAY = 1000;
-const TOOLTIP_PADDING = 6; // px tolerance around name/path area
 let tooltipEl: HTMLElement | null = null;
 let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
 let isDragging = false;
@@ -64,6 +65,62 @@ function setupTileTooltip(tile: HTMLElement, fullPath: string): void {
     hitZone.addEventListener('mouseleave', hideTooltip);
 }
 
+/* ── Origin + eye helpers ── */
+const EYE_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+function originClass(item: ListItem): string {
+    if (item.hidden && item.origin === 'inherited') return ' entry-inherited entry-hidden';
+    if (item.hidden && item.origin === 'override') return ' entry-override entry-hidden';
+    if (item.hidden) return ' entry-hidden';
+    if (item.origin === 'inherited') return ' entry-inherited';
+    if (item.origin === 'override') return ' entry-override';
+    return '';
+}
+
+function originBadgeHtml(item: ListItem): string {
+    if (item.origin === 'inherited') {
+        return `<span class="entry-badge entry-badge--main" title="${escapeHtml(t('badgeMainTitle', { name: state.parentProject?.name || '' }))}">${escapeHtml(t('badgeMain'))}</span>`;
+    }
+    if (item.origin === 'override') {
+        return `<span class="entry-badge entry-badge--override" title="${escapeHtml(t('badgeOverrideTitle'))}">${escapeHtml(t('badgeOverride'))}</span>`;
+    }
+    return '';
+}
+
+function eyeBtnHtml(item: ListItem): string {
+    const title = item.hidden ? t('showEntry') : t('hideEntry');
+    return `<button class="eye-btn${item.hidden ? ' eye-btn--off' : ''}" title="${escapeHtml(title)}">${item.hidden ? EYE_OFF_SVG : EYE_SVG}</button>`;
+}
+
+function setupRowActions(el: HTMLElement, item: ListItem, index: number): void {
+    el.querySelector('.eye-btn')!.addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.hidden = !item.hidden;
+        renderFileList();
+        scheduleSave();
+    });
+    const removeBtn = el.querySelector('.remove-btn');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (item.origin === 'override') {
+                const mainEntry = state.parentProject?.files.find(f => f.id === item.inheritedId);
+                if (mainEntry) {
+                    state.items[index] = { entry: mainEntry, origin: 'inherited', inheritedId: item.inheritedId, hidden: item.hidden };
+                    toast(t('overrideRemoved'), 'success');
+                } else {
+                    state.items.splice(index, 1);
+                }
+            } else {
+                state.items.splice(index, 1);
+            }
+            renderFileList();
+            scheduleSave();
+        });
+    }
+}
+
 /* ── View toggle ── */
 function updateViewToggleButtons(): void {
     viewListBtn.classList.toggle('active', state.viewMode === 'list');
@@ -87,10 +144,10 @@ export function initViewToggle(): void {
     addCustomTextBtn.addEventListener('click', () => showCustomTextModal());
 }
 
-async function showCustomTextModal(entry?: import('./db').FileEntry): Promise<void> {
-    const isEdit = !!entry;
-    const currentIndex = isEdit ? state.files.indexOf(entry!) : -1;
-    const maxPos = isEdit ? state.files.length : state.files.length + 1;
+async function showCustomTextModal(listItem?: ListItem): Promise<void> {
+    const isEdit = !!listItem;
+    const currentIndex = isEdit ? state.items.indexOf(listItem!) : -1;
+    const maxPos = isEdit ? state.items.length : state.items.length + 1;
     const defaultPos = isEdit ? currentIndex + 1 : 1;
 
     const result = await showModal({
@@ -100,7 +157,7 @@ async function showCustomTextModal(entry?: import('./db').FileEntry): Promise<vo
             <div class="modal-form-row-inline">
                 <div class="modal-form-group" style="flex:1">
                     <label>${escapeHtml(t('customTextTitle'))}</label>
-                    <input class="modal-input" type="text" data-role="ct-title" value="${escapeHtml(entry?.customTitle || '')}" placeholder="${escapeHtml(t('customTextTitle'))}">
+                    <input class="modal-input" type="text" data-role="ct-title" value="${escapeHtml(listItem?.entry.customTitle || '')}" placeholder="${escapeHtml(t('customTextTitle'))}">
                 </div>
                 <div class="modal-form-group" style="width:80px;flex-shrink:0">
                     <label>${escapeHtml(t('customTextPosition'))}</label>
@@ -109,11 +166,11 @@ async function showCustomTextModal(entry?: import('./db').FileEntry): Promise<vo
             </div>
             <div class="modal-form-group">
                 <label>${escapeHtml(t('customTextContent'))}</label>
-                <textarea class="modal-input modal-textarea" data-role="ct-content" rows="10" placeholder="${escapeHtml(t('customTextContent'))}">${escapeHtml(entry?.content || '')}</textarea>
+                <textarea class="modal-input modal-textarea" data-role="ct-content" rows="10" placeholder="${escapeHtml(t('customTextContent'))}">${escapeHtml(listItem?.entry.content || '')}</textarea>
             </div>
             <label class="toggle-option modal-toggle-option">
                 <span class="toggle-switch">
-                    <input type="checkbox" data-role="ct-include-title" ${entry?.includeTitle !== false ? 'checked' : ''}>
+                    <input type="checkbox" data-role="ct-include-title" ${listItem?.entry.includeTitle !== false ? 'checked' : ''}>
                     <span class="toggle-slider"></span>
                 </span>
                 <span>${escapeHtml(t('customTextIncludeTitle'))}</span>
@@ -139,21 +196,38 @@ async function showCustomTextModal(entry?: import('./db').FileEntry): Promise<vo
 
     if (!result) return;
 
-    if (isEdit && entry) {
-        entry.customTitle = result.title;
-        entry.name = result.title;
-        entry.content = result.content;
-        entry.size = new Blob([result.content]).size;
-        entry.includeTitle = result.includeTitle;
-        // Move to new position if changed
+    if (isEdit && listItem) {
+        const currentIdx = state.items.indexOf(listItem);
+        if (listItem.origin === 'inherited') {
+            // Copy-on-write: editing an inherited custom text creates an override
+            const entry: import('./db').FileEntry = {
+                id: generateId(),
+                name: result.title,
+                path: '',
+                content: result.content,
+                size: new Blob([result.content]).size,
+                isCustomText: true,
+                customTitle: result.title,
+                includeTitle: result.includeTitle,
+            };
+            state.items[currentIdx] = { entry, origin: 'override', inheritedId: listItem.inheritedId, hidden: listItem.hidden };
+        } else {
+            const entry = listItem.entry;
+            entry.customTitle = result.title;
+            entry.name = result.title;
+            entry.content = result.content;
+            entry.size = new Blob([result.content]).size;
+            entry.includeTitle = result.includeTitle;
+        }
         const targetIndex = result.position - 1;
-        if (currentIndex !== targetIndex) {
-            state.files.splice(currentIndex, 1);
-            state.files.splice(targetIndex, 0, entry);
+        if (currentIdx !== targetIndex) {
+            const moved = state.items.splice(currentIdx, 1)[0];
+            state.items.splice(targetIndex, 0, moved);
         }
         toast(t('customTextUpdated'), 'success');
     } else {
-        const newEntry: import('./db').FileEntry = {
+        const entry: import('./db').FileEntry = {
+            id: generateId(),
             name: result.title,
             path: '',
             content: result.content,
@@ -162,8 +236,7 @@ async function showCustomTextModal(entry?: import('./db').FileEntry): Promise<vo
             customTitle: result.title,
             includeTitle: result.includeTitle,
         };
-        const targetIndex = result.position - 1;
-        state.files.splice(targetIndex, 0, newEntry);
+        state.items.splice(result.position - 1, 0, { entry, origin: 'own', hidden: false });
         toast(t('customTextCreated'), 'success');
     }
     renderFileList();
@@ -174,18 +247,20 @@ async function showCustomTextModal(entry?: import('./db').FileEntry): Promise<vo
 interface TreeNode {
     name: string;
     children: Map<string, TreeNode>;
-    files: { entry: import('./db').FileEntry; index: number }[];
+    files: { item: ListItem; index: number }[];
 }
 
-function buildTree(files: import('./db').FileEntry[]): TreeNode {
+function buildTree(items: ListItem[]): TreeNode {
     const root: TreeNode = { name: '', children: new Map(), files: [] };
-    files.forEach((entry, index) => {
+    items.forEach((item, index) => {
+        const entry = item.entry;
         if (entry.isCustomText) {
-            root.files.push({ entry, index });
+            root.files.push({ item, index });
             return;
         }
         const pathParts = entry.path.split('/').filter(Boolean);
         const fileName = pathParts.pop()!;
+        void fileName;
         let node = root;
         for (const part of pathParts) {
             if (!node.children.has(part)) {
@@ -193,7 +268,7 @@ function buildTree(files: import('./db').FileEntry[]): TreeNode {
             }
             node = node.children.get(part)!;
         }
-        node.files.push({ entry, index });
+        node.files.push({ item, index });
     });
     return root;
 }
@@ -207,7 +282,7 @@ function setupOrderInput(orderEl: HTMLElement, fileIndex: number): void {
     orderEl.addEventListener('click', (e) => {
         e.stopPropagation();
         const currentOrder = fileIndex + 1;
-        const maxOrder = state.files.length;
+        const maxOrder = state.items.length;
         const input = document.createElement('input');
         input.type = 'number';
         input.className = 'tree-order-input';
@@ -226,8 +301,8 @@ function setupOrderInput(orderEl: HTMLElement, fileIndex: number): void {
             if (newPos > maxOrder) newPos = maxOrder;
             const newIndex = newPos - 1;
             if (newIndex !== fileIndex) {
-                const moved = state.files.splice(fileIndex, 1)[0];
-                state.files.splice(newIndex, 0, moved);
+                const moved = state.items.splice(fileIndex, 1)[0];
+                state.items.splice(newIndex, 0, moved);
                 scheduleSave();
             }
             renderFileList();
@@ -295,10 +370,11 @@ function renderTreeNode(node: TreeNode, container: HTMLElement, depth: number, p
         container.appendChild(dirEl);
     }
 
-    for (const { entry, index } of sortedFiles) {
+    for (const { item, index } of sortedFiles) {
+        const entry = item.entry;
         const isCustom = !!entry.isCustomText;
         const el = document.createElement('div');
-        el.className = 'tree-file';
+        el.className = 'tree-file' + originClass(item);
         if (isCustom) el.classList.add('custom-text-entry');
         el.style.paddingLeft = `${depth * 20 + 8}px`;
         el.draggable = true;
@@ -306,29 +382,33 @@ function renderTreeNode(node: TreeNode, container: HTMLElement, depth: number, p
 
         const orderNum = index + 1;
         const size = formatSize(entry.size);
+        const removeHtml = item.origin === 'inherited' ? '' :
+            `<button class="remove-btn tree-remove" title="${escapeHtml(item.origin === 'override' ? t('restoreFromMain') : t('remove'))}">✕</button>`;
 
         if (isCustom) {
             const lineCount = entry.content ? entry.content.split('\n').length : 0;
-            const linesText = lineCount ? lineCount.toLocaleString(getCurrentLang()) + ' ' + t('lines') : '\u2026';
+            const linesText = lineCount ? lineCount.toLocaleString(getCurrentLang()) + ' ' + t('lines') : '…';
             el.innerHTML = `
                 <span class="tree-file-order">${orderNum}</span>
                 <span class="file-icon custom-text-icon">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 </span>
                 <span class="tree-file-name">${escapeHtml(entry.customTitle || entry.name)}</span>
+                ${originBadgeHtml(item)}
                 <span class="tree-file-meta">${size} · ${linesText}</span>
-                <button class="remove-btn tree-remove" title="${escapeHtml(t('remove'))}">✕</button>
+                ${eyeBtnHtml(item)}
+                ${removeHtml}
             `;
             const iconEl = el.querySelector('.custom-text-icon') as HTMLElement;
             if (iconEl) {
                 iconEl.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    showCustomTextModal(entry);
+                    showCustomTextModal(item);
                 });
             }
             el.addEventListener('dblclick', (e) => {
-                if ((e.target as HTMLElement).closest('.remove-btn')) return;
-                showCustomTextModal(entry);
+                if ((e.target as HTMLElement).closest('.remove-btn, .eye-btn')) return;
+                showCustomTextModal(item);
             });
         } else {
             const extRaw = entry.path.split('.').pop()!;
@@ -336,14 +416,16 @@ function renderTreeNode(node: TreeNode, container: HTMLElement, depth: number, p
             const extColor = getExtColor(extRaw);
             const isPdf = entry.name.toLowerCase().endsWith('.pdf');
             const lineCount = (!isPdf && entry.content) ? entry.content.split('\n').length : 0;
-            const linesText = isPdf ? 'PDF' : (lineCount ? lineCount.toLocaleString(getCurrentLang()) + ' ' + t('lines') : '\u2026');
+            const linesText = isPdf ? 'PDF' : (lineCount ? lineCount.toLocaleString(getCurrentLang()) + ' ' + t('lines') : '…');
 
             el.innerHTML = `
                 <span class="tree-file-order">${orderNum}</span>
                 <span class="file-icon" style="background:${extColor}22;color:${extColor};border:1px solid ${extColor}44">${ext}</span>
                 <span class="tree-file-name">${escapeHtml(entry.name)}</span>
+                ${originBadgeHtml(item)}
                 <span class="tree-file-meta">${size} · ${linesText}</span>
-                <button class="remove-btn tree-remove" title="${escapeHtml(t('remove'))}">✕</button>
+                ${eyeBtnHtml(item)}
+                ${removeHtml}
             `;
         }
 
@@ -351,11 +433,7 @@ function renderTreeNode(node: TreeNode, container: HTMLElement, depth: number, p
         const orderEl = el.querySelector('.tree-file-order') as HTMLElement;
         if (orderEl) setupOrderInput(orderEl, index);
 
-        el.querySelector('.remove-btn')!.addEventListener('click', () => {
-            state.files.splice(index, 1);
-            renderFileList();
-            scheduleSave();
-        });
+        setupRowActions(el, item, index);
 
         // Reorder drag
         el.addEventListener('dragstart', e => {
@@ -387,8 +465,8 @@ function renderTreeNode(node: TreeNode, container: HTMLElement, depth: number, p
             if (state.dragSrcIndex !== null && state.dragSrcIndex !== index) {
                 e.preventDefault();
                 e.stopPropagation();
-                const moved = state.files.splice(state.dragSrcIndex, 1)[0];
-                state.files.splice(index, 0, moved);
+                const moved = state.items.splice(state.dragSrcIndex, 1)[0];
+                state.items.splice(index, 0, moved);
                 renderFileList();
                 scheduleSave();
             }
@@ -401,14 +479,14 @@ function renderTreeNode(node: TreeNode, container: HTMLElement, depth: number, p
 export function renderFileList(): void {
     hideTooltip();
     fileListEl.innerHTML = '';
-    mainActions.style.display = state.files.length ? 'flex' : 'none';
-    mergeOptions.style.display = state.files.length ? 'flex' : 'none';
-    const hasPdf = state.files.some(f => f.name.toLowerCase().endsWith('.pdf'));
+    mainActions.style.display = state.items.length ? 'flex' : 'none';
+    mergeOptions.style.display = state.items.length ? 'flex' : 'none';
+    const hasPdf = state.items.some(i => !i.hidden && i.entry.name.toLowerCase().endsWith('.pdf'));
     downloadPdfBtn.style.display = hasPdf ? '' : 'none';
     togglePdfToTextLabel.style.display = hasPdf ? '' : 'none';
 
     fileListWrapper.style.display = '';
-    dropzone.classList.toggle('hidden', state.files.length > 0);
+    dropzone.classList.toggle('hidden', state.items.length > 0);
     ++state.renderGeneration;
 
     // Toggle class on file list for grid layout
@@ -417,26 +495,29 @@ export function renderFileList(): void {
 
     // Tree view rendering
     if (state.viewMode === 'tree') {
-        const tree = buildTree(state.files);
+        const tree = buildTree(state.items);
         renderTreeNode(tree, fileListEl, 0, '');
         return;
     }
 
-    state.files.forEach((entry, i) => {
+    state.items.forEach((item, i) => {
+        const entry = item.entry;
         const isCustom = !!entry.isCustomText;
         const el = document.createElement('div');
-        el.className = state.viewMode === 'tiles' ? 'file-tile' : 'file-item';
+        el.className = (state.viewMode === 'tiles' ? 'file-tile' : 'file-item') + originClass(item);
         if (isCustom) el.classList.add('custom-text-entry');
         el.draggable = true;
         el.dataset.index = String(i);
 
         const orderNum = i + 1;
+        const removeHtml = item.origin === 'inherited' ? '' :
+            `<button class="remove-btn${state.viewMode === 'tiles' ? ' tile-remove' : ''}" title="${escapeHtml(item.origin === 'override' ? t('restoreFromMain') : t('remove'))}">✕</button>`;
 
         if (isCustom) {
             const contentPreview = (entry.content || '').split('\n')[0].slice(0, 80) || '';
             const size = formatSize(entry.size);
             const lineCount = entry.content ? entry.content.split('\n').length : 0;
-            const linesText = lineCount ? lineCount.toLocaleString(getCurrentLang()) + ' ' + t('lines') : '\u2026';
+            const linesText = lineCount ? lineCount.toLocaleString(getCurrentLang()) + ' ' + t('lines') : '…';
 
             if (state.viewMode === 'tiles') {
                 el.innerHTML = `
@@ -445,25 +526,27 @@ export function renderFileList(): void {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       </span>
       <div class="tile-text-zone">
-        <div class="tile-name">${escapeHtml(entry.customTitle || entry.name)}</div>
+        <div class="tile-name-row"><div class="tile-name">${escapeHtml(entry.customTitle || entry.name)}</div>${originBadgeHtml(item)}</div>
         <div class="tile-path custom-text-preview">${escapeHtml(contentPreview)}</div>
       </div>
       <div class="tile-meta"><span>${size}</span><span>${linesText}</span></div>
-      <button class="remove-btn tile-remove" title="${escapeHtml(t('remove'))}">\u2715</button>
+      ${eyeBtnHtml(item)}
+      ${removeHtml}
     `;
             } else {
                 el.innerHTML = `
       <span class="item-order">${orderNum}</span>
-      <span class="grip">\u2817</span>
+      <span class="grip">⠗</span>
       <span class="file-icon custom-text-icon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       </span>
       <div class="file-info">
-        <div class="file-name">${escapeHtml(entry.customTitle || entry.name)}</div>
+        <div class="file-name-row"><div class="file-name">${escapeHtml(entry.customTitle || entry.name)}</div>${originBadgeHtml(item)}</div>
         <div class="file-path custom-text-preview">${escapeHtml(contentPreview)}</div>
       </div>
       <span class="file-meta">${size}<br>${linesText}</span>
-      <button class="remove-btn" title="${escapeHtml(t('remove'))}">\u2715</button>
+      ${eyeBtnHtml(item)}
+      ${removeHtml}
     `;
             }
 
@@ -472,12 +555,13 @@ export function renderFileList(): void {
             if (iconEl) {
                 iconEl.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    showCustomTextModal(entry);
+                    showCustomTextModal(item);
                 });
             }
             el.addEventListener('dblclick', (e) => {
-                if ((e.target as HTMLElement).closest('.remove-btn')) return;
-                showCustomTextModal(entry);
+                // Fix 6: guard both remove-btn and eye-btn
+                if ((e.target as HTMLElement).closest('.remove-btn, .eye-btn')) return;
+                showCustomTextModal(item);
             });
         } else {
             const extRaw = entry.path.split('.').pop()!;
@@ -487,40 +571,38 @@ export function renderFileList(): void {
 
             const isPdf = entry.name.toLowerCase().endsWith('.pdf');
             const lineCount = (!isPdf && entry.content) ? entry.content.split('\n').length : 0;
-            const linesText = isPdf ? 'PDF' : (lineCount ? lineCount.toLocaleString(getCurrentLang()) + ' ' + t('lines') : '\u2026');
+            const linesText = isPdf ? 'PDF' : (lineCount ? lineCount.toLocaleString(getCurrentLang()) + ' ' + t('lines') : '…');
 
             if (state.viewMode === 'tiles') {
                 el.innerHTML = `
       <span class="tile-order">${orderNum}</span>
       <span class="file-icon" style="background:${extColor}22;color:${extColor};border:1px solid ${extColor}44">${ext}</span>
       <div class="tile-text-zone">
-        <div class="tile-name">${escapeHtml(entry.name)}</div>
+        <div class="tile-name-row"><div class="tile-name">${escapeHtml(entry.name)}</div>${originBadgeHtml(item)}</div>
         <div class="tile-path">${escapeHtml(entry.path)}</div>
       </div>
       <div class="tile-meta"><span>${size}</span><span>${linesText}</span></div>
-      <button class="remove-btn tile-remove" title="${escapeHtml(t('remove'))}">\u2715</button>
+      ${eyeBtnHtml(item)}
+      ${removeHtml}
     `;
                 setupTileTooltip(el, entry.path);
             } else {
                 el.innerHTML = `
       <span class="item-order">${orderNum}</span>
-      <span class="grip">\u2817</span>
+      <span class="grip">⠗</span>
       <span class="file-icon" style="background:${extColor}22;color:${extColor};border:1px solid ${extColor}44">${ext}</span>
       <div class="file-info">
-        <div class="file-name">${escapeHtml(entry.name)}</div>
+        <div class="file-name-row"><div class="file-name">${escapeHtml(entry.name)}</div>${originBadgeHtml(item)}</div>
         <div class="file-path" title="${escapeHtml(entry.path)}">${escapeHtml(entry.path)}</div>
       </div>
       <span class="file-meta">${size}<br>${linesText}</span>
-      <button class="remove-btn" title="${escapeHtml(t('remove'))}">\u2715</button>
+      ${eyeBtnHtml(item)}
+      ${removeHtml}
     `;
             }
         }
 
-        el.querySelector('.remove-btn')!.addEventListener('click', () => {
-            state.files.splice(i, 1);
-            renderFileList();
-            scheduleSave();
-        });
+        setupRowActions(el, item, i);
 
         // Reorder drag
         el.addEventListener('dragstart', e => {
@@ -552,8 +634,8 @@ export function renderFileList(): void {
             if (state.dragSrcIndex !== null && state.dragSrcIndex !== i) {
                 e.preventDefault();
                 e.stopPropagation();
-                const moved = state.files.splice(state.dragSrcIndex, 1)[0];
-                state.files.splice(i, 0, moved);
+                const moved = state.items.splice(state.dragSrcIndex, 1)[0];
+                state.items.splice(i, 0, moved);
                 renderFileList();
                 scheduleSave();
             }

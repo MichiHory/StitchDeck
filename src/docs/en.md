@@ -63,7 +63,51 @@ You can export your projects to a compressed `.sdeck` file and import them back 
   - **Skip** — don't import this project
 - Errors during import are displayed as stacked toast notifications so all messages are visible at once
 
-## Adding Files
+## Subprojects
+
+Subprojects let you maintain multiple related file lists that share a common set of files from a **main project**. This is useful when you need slightly different contexts for different purposes — such as a feature branch vs. a main branch, or different AI tasks over the same codebase.
+
+### How inheritance works
+
+A subproject inherits all files from its main project **by reference** — no copying happens at first. The inherited files appear in the list with a **blue left border** and a "main" badge. The main project continues to work normally as a standalone project.
+
+When the main project gains new files, they automatically appear in the subproject too (slotted in after their main-order neighbor). When a main file is removed, it disappears from the subproject list as well.
+
+### Overrides
+
+You can override any inherited file in a subproject without affecting the main:
+
+- **Upload a file with the same path** — the inherited entry is replaced by your uploaded version (orange "overridden" badge)
+- **Edit an inherited custom text** — creates a local copy of the text in the subproject
+- **GitHub sync** — if a synced file matches an inherited path, a subproject-local override is created
+
+To undo an override, click the ✕ button on the overridden entry — the inherited entry is restored, including its previous hidden state.
+
+### Visibility (eye toggle)
+
+Hover over any file in the list to reveal the **eye icon**. Clicking it excludes that entry from the merged output, PDF export, and security scan — without removing it from the list. Hidden entries appear at 45% opacity with an orange crossed-out eye.
+
+Visibility is **strictly per-project**: hiding a file in the main project does not affect the subproject and vice versa. Inherited entries can be hidden (eye only — no ✕).
+
+### Creating a subproject
+
+Hover over a main project in the sidebar to reveal the **+** button. Click it, enter a name, and a new subproject is created inheriting all entries from the main. The subproject appears indented under the main in the sidebar.
+
+### Collapsing subprojects
+
+Click the arrow on the main project row in the sidebar to collapse or expand its subprojects. The collapsed state is saved across reloads.
+
+### Detaching a subproject
+
+Click the **⇱** button on a subproject row in the sidebar. After confirmation, all inherited entries are copied into the subproject (with new IDs) and it becomes a fully independent project.
+
+### Resetting a subproject
+
+The **Clear all** button in a subproject acts as a reset: all own entries and overrides are removed, all hidden entries are made visible again, and the order is restored to the main project's current order.
+
+### Export and import
+
+When you export a subproject, its main project is always included in the export automatically (even if you did not check the main's checkbox). On import, the relationship is preserved and the IDs are remapped correctly. If you import a subproject whose main was skipped or not present, the subproject is automatically detached and its entries are materialized.
 
 Add files to your project by dragging and dropping them onto the main content area.
 
