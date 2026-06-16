@@ -4,7 +4,7 @@ import { getProject, saveProject, generateId } from './db';
 import { t } from './i18n';
 import { toast } from './toast';
 import { showModal } from './modal';
-import { escapeHtml, getExtColor } from './helpers';
+import { escapeHtml, getExtColor, isBinaryFile } from './helpers';
 import { renderFileList } from './file-list';
 import { scheduleSave, renderProjectList, updateGitHubStatus, persistCurrentProject } from './projects';
 
@@ -254,25 +254,6 @@ async function fetchGitignorePatterns(owner: string, repo: string, branch: strin
     }
 
     return allPatterns;
-}
-
-/* ── Binary detection ── */
-
-const BINARY_EXTENSIONS = new Set([
-    'png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'webp', 'avif', 'svg',
-    'woff', 'woff2', 'ttf', 'otf', 'eot',
-    'zip', 'gz', 'tar', 'bz2', 'xz', '7z', 'rar',
-    'exe', 'dll', 'so', 'dylib', 'bin',
-    'mp3', 'mp4', 'wav', 'ogg', 'webm', 'avi', 'mov',
-    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-    'pyc', 'class', 'o', 'obj',
-    'sqlite', 'db',
-    'lock',
-]);
-
-function isBinaryFile(path: string): boolean {
-    const ext = path.split('.').pop()?.toLowerCase() || '';
-    return BINARY_EXTENSIONS.has(ext);
 }
 
 /* ── Main sync function ── */

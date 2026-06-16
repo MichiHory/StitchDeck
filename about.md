@@ -65,9 +65,18 @@ A utility for merging files for LLMs. The utility can:
   - After adding files, dragging shows an overlay over the entire visible main-content area with fixed positioning (does not grow with content)
   - Drop zone has a dashed border and inset glow effect on hover/dragover
 * Capture complete file paths via a hidden textarea on drag
-  - Uses `webkitRelativePath` to preserve directory structure
-  - Falls back to the file name alone if relative path is unavailable
+  - For directly dropped files, falls back to the file name alone if no path is captured
   - Cleans paths by removing the `file://` prefix and decoding URI components
+* Drag & drop of whole folders
+  - A drop is routed by inspecting `DataTransferItem.webkitGetAsEntry()` synchronously during the drop event; if any top-level item is a directory, the folder path is used, otherwise the original file-only path is preserved unchanged
+  - Folders are walked recursively via `FileSystemDirectoryReader.readEntries()` (read in batches until empty)
+  - **Path reconstruction**: a folder file's absolute path is rebuilt as `dirname(captured absolute folder path) + entry.fullPath` (separators normalized to `/`); when the OS does not expose the folder's absolute path on drop, it falls back to the relative `fullPath` and shows a toast that absolute paths could not be captured
+  - **Hard-skip**: `.git` and `node_modules` directories (at any depth) and `.DS_Store` files are never imported nor offered
+  - **Auto-import**: text files and PDFs from the folder are imported automatically
+  - **Binary confirmation**: files detected as binary by extension (shared `isBinaryFile`, minus `pdf`) are listed in a confirmation modal — flat list with a checkbox per file (unchecked by default), a "Select all" checkbox (with indeterminate state), and two buttons: "Upload selected" (checked files) and "Upload all"; closing/cancelling imports no binaries (clean files import regardless)
+  - A lightweight loading toast is shown while a folder's contents are read; a summary toast reports the number of files added
+  - The binary-detection + folder-path strategy is recorded in `docs/adr/0001-folder-drop-paths-and-binaries.md`
+* Binary detection is shared between GitHub sync and folder drop (`isBinaryFile` / `BINARY_EXTENSIONS` in `helpers.ts`)
 
 ## File List
 
@@ -214,6 +223,7 @@ A utility for merging files for LLMs. The utility can:
   - Error actions: red accent background and text
   - Warning: neutral style
   - Auto-dismiss after 3.5 seconds (each toast independently)
+  - `persistentToast(msg)` variant stays visible until a returned dismiss function is called — used as a loading indicator (e.g. while importing a dropped folder)
 * Modal windows for actions
   - Backdrop blur effect
   - Close by clicking the background or pressing ESC
@@ -302,14 +312,14 @@ A utility for merging files for LLMs. The utility can:
   - `src/state.ts` — shared application state (items: ListItem[], parentProject, fullMergedContent, dragSrcIndex, renderGeneration, currentProjectId, saveTimeout, viewMode)
   - `src/inheritance.ts` — pure subproject logic: buildOwnItems, buildSubItems, applyItemsToProject, detachProject, resetSubItems, visibleEntries, ensureEntryIds
   - `src/dom.ts` — DOM element references
-  - `src/helpers.ts` — utility functions (escapeHtml, formatSize, countTokens, formatTokens, cleanPath, readFile, getExtColor, getLanguage)
-  - `src/toast.ts` — toast notifications
+  - `src/helpers.ts` — utility functions (escapeHtml, formatSize, countTokens, formatTokens, cleanPath, readFile, getExtColor, getLanguage, isBinaryFile/BINARY_EXTENSIONS)
+  - `src/toast.ts` — toast notifications (transient `toast` + `persistentToast` loading indicator)
   - `src/modal.ts` — modal dialogs (generic component with validation)
   - `src/animations.ts` — particle burst and grow-in animations
   - `src/projects.ts` — project management (CRUD, persistence, switching, hierarchical sidebar, create-sub, detach, delete-main dialog)
   - `src/export-import.ts` — project export and import (compression, encryption, UI dialogs, duplicate handling, .sdeck v2 with subproject relation preservation)
   - `src/file-list.ts` — file list rendering, drag & drop reorder, custom text dialogs, eye toggle, origin badges
-  - `src/dropzone.ts` — drag & drop file upload, override-on-upload logic
+  - `src/dropzone.ts` — drag & drop file upload, recursive folder traversal, binary-confirmation modal, override-on-upload logic
   - `src/merge.ts` — merging, copying, downloading (text and PDF), clear all (reset for subs)
   - `src/pdf.ts` — PDF binary conversion utilities
   - `src/github.ts` — GitHub API integration (repository fetching, .gitignore parsing, in-place synchronization, tree structure)

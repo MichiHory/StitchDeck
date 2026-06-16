@@ -39,6 +39,25 @@ export function readFile(file: File): Promise<string> {
     });
 }
 
+/* ── Binary detection (shared by GitHub sync and folder drag & drop) ── */
+
+export const BINARY_EXTENSIONS = new Set([
+    'png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'webp', 'avif', 'svg',
+    'woff', 'woff2', 'ttf', 'otf', 'eot',
+    'zip', 'gz', 'tar', 'bz2', 'xz', '7z', 'rar',
+    'exe', 'dll', 'so', 'dylib', 'bin',
+    'mp3', 'mp4', 'wav', 'ogg', 'webm', 'avi', 'mov',
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+    'pyc', 'class', 'o', 'obj',
+    'sqlite', 'db',
+    'lock',
+]);
+
+export function isBinaryFile(path: string): boolean {
+    const ext = path.split('.').pop()?.toLowerCase() || '';
+    return BINARY_EXTENSIONS.has(ext);
+}
+
 export function getExtColor(ext: string): string {
     ext = ext.toLowerCase();
     const map: Record<string, string> = {
